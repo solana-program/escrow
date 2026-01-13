@@ -1,0 +1,32 @@
+name: Format
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  rust-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.92'
+          components: rustfmt, clippy
+      - name: Check Rust formatting
+        run: cargo fmt -p escrow-program -- --check
+      - name: Run Clippy
+        run: cargo clippy -p escrow-program -- -D warnings
+
+  typescript-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - run: pnpm install
+      - run: pnpm run format:check

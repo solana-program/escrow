@@ -1,0 +1,40 @@
+name: IDL Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check-generated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.92'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - run: pnpm install
+      - name: Generate IDL and clients
+        run: |
+          pnpm run generate-idl
+          pnpm run generate-clients
+      - name: Check for uncommitted changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::IDL or generated clients are out of date!"
+            echo "Run: pnpm run generate-idl && pnpm run generate-clients"
+            git diff
+            exit 1
+          fi

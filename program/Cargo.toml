@@ -1,0 +1,34 @@
+[package]
+name = "escrow-program"
+version = { workspace = true }
+edition = { workspace = true }
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[lints]
+workspace = true
+
+[features]
+no-entrypoint = []
+idl = []
+devnet = []
+
+[dependencies]
+codama = { workspace = true }
+const-crypto = { workspace = true }
+pinocchio = { workspace = true, features = ["cpi"] }
+pinocchio-associated-token-account = { workspace = true }
+pinocchio-log = { workspace = true }
+pinocchio-system = { workspace = true }
+pinocchio-token = { workspace = true }
+pinocchio-token-2022 = { workspace = true }
+spl-token-2022 = { workspace = true }
+thiserror = { workspace = true }
+
+[build-dependencies]
+codama = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+sha2 = "0.10.9"

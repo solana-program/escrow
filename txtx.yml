@@ -1,0 +1,18 @@
+---
+name: escrow-program
+id: escrow-program
+runbooks:
+  - name: deploy
+    id: deploy
+    description: Deploy escrow program to SVM network
+    location: runbooks/deploy.tx
+environments:
+  localnet:
+    svm_network_id: localnet
+    svm_api_url: http://127.0.0.1:8899
+  devnet:
+    svm_network_id: devnet
+    svm_api_url: ${DEVNET_RPC_URL}
+  mainnet:
+    svm_network_id: mainnet-beta
+    svm_api_url: ${MAINNET_RPC_URL}

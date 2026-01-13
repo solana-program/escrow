@@ -1,0 +1,85 @@
+name: Test
+
+on:
+  workflow_call:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  SOLANA_VERSION: 2.2.19
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.92'
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - run: cargo test -p escrow-program
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.92'
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${{ env.SOLANA_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+      - uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - run: pnpm install
+      - name: Build program
+        run: |
+          pnpm run generate-idl
+          pnpm run generate-clients
+          cd program && cargo-build-sbf
+      - name: Build test hook programs
+        run: |
+          cd tests/test-hook-program
+          cargo-build-sbf --features allow
+          cp ../../target/deploy/test_hook_program.so ../../target/deploy/test_hook_allow.so
+          cargo-build-sbf --features deny
+          cp ../../target/deploy/test_hook_program.so ../../target/deploy/test_hook_deny.so
+      - name: Run integration tests
+        run: |
+          mkdir -p .cus
+          cargo test -p tests-escrow-program -- --test-threads=1
+        env:
+          CU_TRACKING: '1'
+      - name: Compute Units Summary
+        if: always()
+        run: |
+          echo "## Compute Units Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f .cus/results.txt ]; then
+            echo "| Instruction | CUs |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------------|-----|" >> $GITHUB_STEP_SUMMARY
+            sort .cus/results.txt | uniq | while IFS=, read name cus; do
+              echo "| $name | $cus |" >> $GITHUB_STEP_SUMMARY
+            done
+          else
+            echo "No CU tracking data found." >> $GITHUB_STEP_SUMMARY
+          fi

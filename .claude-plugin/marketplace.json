@@ -1,0 +1,14 @@
+{
+    "name": "escrow-plugins",
+    "description": "Escrow program plugins for Claude Code",
+    "owner": {
+        "name": "Solana Foundation"
+    },
+    "plugins": [
+        {
+            "name": "escrow-extension-generator",
+            "description": "Generate new escrow program extensions with state, instructions, events, tests, and validation",
+            "source": "./.claude-plugin/escrow-extension-generator"
+        }
+    ]
+}

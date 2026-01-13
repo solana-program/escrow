@@ -1,0 +1,27 @@
+.DS_Store
+.env
+.vscode/
+/keypairs
+
+/worktrees
+
+# Rust
+**/target/
+**/coverage/
+**/generated/
+
+# Javascript / Typescript
+**/node_modules/
+**/dist/
+
+# AI
+.claude/
+
+# Solana Test Validator
+**/test-ledger
+
+# Local
+.local/
+
+# CU tracking
+.cus/
