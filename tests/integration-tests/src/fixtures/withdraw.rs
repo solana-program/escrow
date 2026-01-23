@@ -1,9 +1,7 @@
-use escrow_program_client::{
-    instructions::{
-        AddTimelockBuilder, AllowMintBuilder, CreatesEscrowBuilder, DepositBuilder, SetHookBuilder, WithdrawBuilder,
-    },
-    types::Address,
+use escrow_program_client::instructions::{
+    AddTimelockBuilder, AllowMintBuilder, CreatesEscrowBuilder, DepositBuilder, SetHookBuilder, WithdrawBuilder,
 };
+use solana_address::Address;
 use solana_sdk::{
     instruction::AccountMeta,
     pubkey::Pubkey,

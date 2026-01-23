@@ -1,4 +1,5 @@
-use escrow_program_client::{instructions::SetHookBuilder, types::Address};
+use escrow_program_client::instructions::SetHookBuilder;
+use solana_address::Address;
 use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},

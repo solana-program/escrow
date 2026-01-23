@@ -2,7 +2,6 @@ import { Codama, createFromJson } from 'codama';
 import {
     appendAccountDiscriminator,
     appendAccountVersion,
-    appendAddressType,
     appendPdaDerivers,
     setInstructionAccountDefaultValues,
     updateInstructionBumps,
@@ -27,11 +26,6 @@ export class EscrowCodamaBuilder {
 
     appendAccountVersion(): this {
         this.codama = appendAccountVersion(this.codama);
-        return this;
-    }
-
-    appendAddressType(): this {
-        this.codama = appendAddressType(this.codama);
         return this;
     }
 

@@ -37,16 +37,14 @@
               "kind": "structFieldTypeNode",
               "name": "escrowSeed",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "admin",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             }
           ],
@@ -114,32 +112,28 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "depositor",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "mint",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "receiptSeed",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
@@ -177,24 +171,21 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "oldAdmin",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "newAdmin",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             }
           ],
@@ -210,16 +201,14 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "mint",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             }
           ],
@@ -235,16 +224,14 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "mint",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             }
           ],
@@ -260,16 +247,14 @@
               "kind": "structFieldTypeNode",
               "name": "escrowSeed",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "admin",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             }
           ],
@@ -285,32 +270,28 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "depositor",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "mint",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "receiptSeed",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
@@ -335,16 +316,14 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "hookProgram",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             }
           ],
@@ -360,8 +339,7 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
@@ -386,8 +364,7 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
@@ -412,32 +389,28 @@
               "kind": "structFieldTypeNode",
               "name": "escrow",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "withdrawer",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "mint",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
               "kind": "structFieldTypeNode",
               "name": "receiptSeed",
               "type": {
-                "kind": "definedTypeLinkNode",
-                "name": "address"
+                "kind": "publicKeyTypeNode"
               }
             },
             {
@@ -777,8 +750,7 @@
             "kind": "instructionArgumentNode",
             "name": "hookProgram",
             "type": {
-              "kind": "definedTypeLinkNode",
-              "name": "address"
+              "kind": "publicKeyTypeNode"
             }
           }
         ],

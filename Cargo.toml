@@ -1,5 +1,10 @@
 [workspace]
-members = ["program", "clients/rust", "tests/integration-tests", "tests/test-hook-program"]
+members = [
+    "program",
+    "clients/rust",
+    "tests/integration-tests",
+    "tests/test-hook-program",
+]
 resolver = "2"
 
 [workspace.package]
@@ -16,7 +21,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 ] }
 
 [workspace.dependencies]
-codama = "^0.7.1"
+codama = "^0.7.2"
 serde_json = "^1.0.145"
 const-crypto = "^0.3.0"
 pinocchio = "^0.10.1"
