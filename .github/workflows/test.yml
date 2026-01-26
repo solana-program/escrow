@@ -75,11 +75,23 @@ jobs:
           echo "## Compute Units Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           if [ -f .cus/results.txt ]; then
-            echo "| Instruction | CUs |" >> $GITHUB_STEP_SUMMARY
-            echo "|-------------|-----|" >> $GITHUB_STEP_SUMMARY
-            sort .cus/results.txt | uniq | while IFS=, read name cus; do
-              echo "| $name | $cus |" >> $GITHUB_STEP_SUMMARY
-            done
+            echo "| Instruction | Best | Avg | Worst | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|-------------|------|-----|-------|-------|" >> $GITHUB_STEP_SUMMARY
+            awk -F',' '
+            {
+              name = $1
+              cus = $2
+              count[name]++
+              sum[name] += cus
+              if (!(name in min) || cus < min[name]) min[name] = cus
+              if (!(name in max) || cus > max[name]) max[name] = cus
+            }
+            END {
+              for (name in count) {
+                avg = int(sum[name] / count[name])
+                printf "| %s | %d | %d | %d | %d |\n", name, min[name], avg, max[name], count[name]
+              }
+            }' .cus/results.txt | sort >> $GITHUB_STEP_SUMMARY
           else
             echo "No CU tracking data found." >> $GITHUB_STEP_SUMMARY
           fi
