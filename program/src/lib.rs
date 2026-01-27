@@ -24,7 +24,6 @@ pub mod utils;
 
 pub mod events;
 pub mod instructions;
-pub mod processors;
 pub mod state;
 
 #[cfg(not(feature = "no-entrypoint"))]
