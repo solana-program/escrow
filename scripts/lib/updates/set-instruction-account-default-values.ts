@@ -7,6 +7,7 @@ import {
     accountValueNode,
     variablePdaSeedNode,
     publicKeyValueNode,
+    pdaLinkNode,
     setInstructionAccountDefaultValuesVisitor,
 } from 'codama';
 
@@ -42,6 +43,7 @@ function createAtaPdaValueNode(ownerAccount: string, mintAccount: string, tokenP
 export function setInstructionAccountDefaultValues(escrowCodama: Codama): Codama {
     escrowCodama.update(
         setInstructionAccountDefaultValuesVisitor([
+            // Global Constants
             {
                 account: 'escrowProgram',
                 defaultValue: publicKeyValueNode(ESCROW_PROGRAM_ID),
@@ -62,13 +64,55 @@ export function setInstructionAccountDefaultValues(escrowCodama: Codama): Codama
                 account: 'eventAuthority',
                 defaultValue: publicKeyValueNode(EVENT_AUTHORITY_PDA),
             },
+
+            // PDA Derivations
             {
-                account: 'escrowAta',
+                account: 'escrow',
+                defaultValue: pdaValueNode(pdaLinkNode('escrow'), [
+                    pdaSeedValueNode('escrowSeed', accountValueNode('escrowSeed')),
+                ]),
+            },
+            {
+                account: 'receipt',
+                defaultValue: pdaValueNode(pdaLinkNode('receipt'), [
+                    pdaSeedValueNode('escrow', accountValueNode('escrow')),
+                    pdaSeedValueNode('depositor', accountValueNode('depositor')),
+                    pdaSeedValueNode('mint', accountValueNode('mint')),
+                    pdaSeedValueNode('receiptSeed', accountValueNode('receiptSeed')),
+                ]),
+            },
+            {
+                account: 'allowedMint',
+                defaultValue: pdaValueNode(pdaLinkNode('allowedMint'), [
+                    pdaSeedValueNode('escrow', accountValueNode('escrow')),
+                    pdaSeedValueNode('mint', accountValueNode('mint')),
+                ]),
+            },
+            {
+                account: 'extensions',
+                defaultValue: pdaValueNode(pdaLinkNode('extensions'), [
+                    pdaSeedValueNode('escrow', accountValueNode('escrow')),
+                ]),
+            },
+            {
+                account: 'escrowExtensions',
+                defaultValue: pdaValueNode(pdaLinkNode('extensions'), [
+                    pdaSeedValueNode('escrow', accountValueNode('escrow')),
+                ]),
+            },
+
+            // ATAs
+            {
+                account: 'vault',
                 defaultValue: createAtaPdaValueNode('escrow', 'mint', 'tokenProgram'),
             },
             {
-                account: 'userAta',
-                defaultValue: createAtaPdaValueNode('user', 'mint', 'tokenProgram'),
+                account: 'depositorTokenAccount',
+                defaultValue: createAtaPdaValueNode('depositor', 'mint', 'tokenProgram'),
+            },
+            {
+                account: 'withdrawerTokenAccount',
+                defaultValue: createAtaPdaValueNode('withdrawer', 'mint', 'tokenProgram'),
             },
         ]),
     );
