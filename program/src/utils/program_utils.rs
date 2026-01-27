@@ -1,5 +1,6 @@
 use crate::ID as ESCROW_PROGRAM_ID;
 use pinocchio::{account::AccountView, error::ProgramError};
+use pinocchio_associated_token_account::ID as ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID;
 use pinocchio_token::ID as TOKEN_PROGRAM_ID;
 use pinocchio_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 
@@ -45,6 +46,22 @@ pub fn verify_token_program(account: &AccountView) -> Result<(), ProgramError> {
 #[inline(always)]
 pub fn verify_current_program(account: &AccountView) -> Result<(), ProgramError> {
     if account.address() != &ESCROW_PROGRAM_ID {
+        return Err(ProgramError::IncorrectProgramId);
+    }
+
+    Ok(())
+}
+
+/// Verify the account is the associated token program, returning an error if it is not.
+///
+/// # Arguments
+/// * `account` - The account to verify.
+///
+/// # Returns
+/// * `Result<(), ProgramError>` - The result of the operation
+#[inline(always)]
+pub fn verify_associated_token_program(account: &AccountView) -> Result<(), ProgramError> {
+    if account.address() != &ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID {
         return Err(ProgramError::IncorrectProgramId);
     }
 

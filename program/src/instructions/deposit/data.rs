@@ -1,6 +1,6 @@
 use pinocchio::error::ProgramError;
 
-use crate::{require_len, traits::InstructionData};
+use crate::{errors::EscrowProgramError, require_len, traits::InstructionData};
 
 /// Instruction data for Deposit
 ///
@@ -21,6 +21,10 @@ impl<'a> TryFrom<&'a [u8]> for DepositData {
 
         let bump = data[0];
         let amount = u64::from_le_bytes(data[1..9].try_into().map_err(|_| ProgramError::InvalidInstructionData)?);
+
+        if amount == 0 {
+            return Err(EscrowProgramError::ZeroDepositAmount.into());
+        }
 
         Ok(Self { bump, amount })
     }
@@ -59,5 +63,18 @@ mod tests {
         let data = [0u8; 5];
         let result = DepositData::try_from(&data[..]);
         assert!(matches!(result, Err(ProgramError::InvalidInstructionData)));
+    }
+
+    #[test]
+    fn test_deposit_data_try_from_zero_amount() {
+        let mut data = [0u8; 9];
+        data[0] = 255; // bump
+        data[1..9].copy_from_slice(&0u64.to_le_bytes()); // zero amount
+
+        let result = DepositData::try_from(&data[..]);
+        assert!(matches!(
+            result,
+            Err(ProgramError::Custom(13)) // ZeroDepositAmount
+        ));
     }
 }

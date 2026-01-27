@@ -5,6 +5,7 @@ use crate::{
         test_wrong_account, test_wrong_current_program, test_wrong_system_program, InstructionTestFixture, TestContext,
     },
 };
+use escrow_program_client::instructions::CreatesEscrowBuilder;
 use solana_sdk::{instruction::InstructionError, signature::Signer};
 
 // ============================================================================
@@ -91,4 +92,38 @@ fn test_create_escrow_success() {
     test_ix.send_expect_success(&mut ctx);
 
     assert_escrow_account(&ctx, &escrow_pda, &admin_pubkey, bump, &escrow_seed_pubkey);
+}
+
+// ============================================================================
+// Re-initialization Protection Tests
+// ============================================================================
+
+#[test]
+fn test_create_escrow_reinitialization_fails() {
+    let mut ctx = TestContext::new();
+    let test_ix = CreateEscrowFixture::build_valid(&mut ctx);
+
+    let admin = test_ix.signers[0].insecure_clone();
+    let escrow_seed = test_ix.signers[1].insecure_clone();
+    let escrow_pda = test_ix.instruction.accounts[3].pubkey;
+    let bump = test_ix.instruction.data[1];
+
+    test_ix.send_expect_success(&mut ctx);
+
+    assert_escrow_account(&ctx, &escrow_pda, &admin.pubkey(), bump, &escrow_seed.pubkey());
+
+    let attacker = ctx.create_funded_keypair();
+    let reinit_ix = CreatesEscrowBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .admin(attacker.pubkey())
+        .escrow_seed(escrow_seed.pubkey())
+        .escrow(escrow_pda)
+        .bump(bump)
+        .instruction();
+
+    let error = ctx.send_transaction_expect_error(reinit_ix, &[&attacker, &escrow_seed]);
+
+    assert_instruction_error(error, InstructionError::AccountAlreadyInitialized);
+
+    assert_escrow_account(&ctx, &escrow_pda, &admin.pubkey(), bump, &escrow_seed.pubkey());
 }

@@ -157,6 +157,7 @@ impl<'a> DepositSetupBuilder<'a> {
             .escrow_extensions(extensions_pda)
             .mint(mint.pubkey())
             .allowed_mint(allowed_mint_pda)
+            .vault(vault)
             .token_program(token_program)
             .bump(allowed_mint_bump)
             .instruction();

@@ -1,10 +1,11 @@
+use alloc::vec::Vec;
 use pinocchio::{
     error::ProgramError,
     sysvars::{clock::Clock, Sysvar},
     ProgramResult,
 };
 
-use crate::{assert_no_padding, errors::EscrowProgramError, require_len, utils::ValidationContext};
+use crate::{assert_no_padding, errors::EscrowProgramError, require_len, traits::ExtensionData};
 
 /// Timelock extension data (stored in TLV format)
 ///
@@ -25,33 +26,36 @@ impl TimelockData {
         Self { lock_duration }
     }
 
-    pub fn to_bytes(&self) -> [u8; Self::LEN] {
-        self.lock_duration.to_le_bytes()
-    }
-
-    pub fn from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
-        require_len!(data, Self::LEN);
-
-        Ok(Self { lock_duration: u64::from_le_bytes(data[0..8].try_into().unwrap()) })
-    }
-
     /// Check if timelock is enabled
     pub fn is_enabled(&self) -> bool {
         self.lock_duration != 0
     }
 
-    /// Validate timelock constraint
-    pub fn validate(data: &[u8], ctx: &ValidationContext) -> ProgramResult {
-        let timelock = Self::from_bytes(data)?;
-        if timelock.is_enabled() {
-            let clock = Clock::get()?;
-            let unlock_time =
-                ctx.deposited_at.checked_add(timelock.lock_duration as i64).ok_or(ProgramError::ArithmeticOverflow)?;
-            if clock.unix_timestamp < unlock_time {
-                return Err(EscrowProgramError::TimelockNotExpired.into());
-            }
+    /// Validate timelock constraint against the deposit timestamp
+    pub fn validate(&self, deposited_at: i64) -> ProgramResult {
+        if !self.is_enabled() {
+            return Ok(());
+        }
+
+        let unlock_time =
+            deposited_at.checked_add(self.lock_duration as i64).ok_or(ProgramError::ArithmeticOverflow)?;
+        let clock = Clock::get()?;
+        if clock.unix_timestamp < unlock_time {
+            return Err(EscrowProgramError::TimelockNotExpired.into());
         }
         Ok(())
+    }
+}
+
+impl ExtensionData for TimelockData {
+    fn to_bytes(&self) -> Vec<u8> {
+        self.lock_duration.to_le_bytes().to_vec()
+    }
+
+    fn from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
+        require_len!(data, Self::LEN);
+
+        Ok(Self { lock_duration: u64::from_le_bytes(data[0..8].try_into().unwrap()) })
     }
 }
 

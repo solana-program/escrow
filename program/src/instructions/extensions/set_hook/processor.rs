@@ -4,9 +4,9 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 use crate::{
     events::HookSetEvent,
     instructions::SetHook,
-    state::{Escrow, ExtensionType, ExtensionsPda, HookData},
+    state::{append_extension, Escrow, ExtensionType, ExtensionsPda, HookData},
     traits::{EventSerialize, PdaSeeds},
-    utils::{append_extension, emit_event, TlvWriter},
+    utils::{emit_event, TlvWriter},
 };
 
 /// Processes the SetHook instruction.

@@ -1511,7 +1511,6 @@ dependencies = [
  "pinocchio-token",
  "pinocchio-token-2022",
  "serde_json",
- "sha2 0.10.9",
  "spl-token-2022",
  "thiserror 2.0.17",
 ]

@@ -505,6 +505,12 @@
         "kind": "errorNode",
         "message": "Token extension already blocked",
         "name": "tokenExtensionAlreadyBlocked"
+      },
+      {
+        "code": 13,
+        "kind": "errorNode",
+        "message": "Zero deposit amount",
+        "name": "zeroDepositAmount"
       }
     ],
     "instructions": [
@@ -958,9 +964,15 @@
         "accounts": [
           {
             "isSigner": true,
-            "isWritable": true,
+            "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "payer"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "rentRecipient"
           },
           {
             "isSigner": true,
@@ -1095,9 +1107,21 @@
           },
           {
             "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "vault"
+          },
+          {
+            "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "tokenProgram"
+          },
+          {
+            "isSigner": false,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "associatedTokenProgram"
           },
           {
             "isSigner": false,
@@ -1162,10 +1186,16 @@
             "name": "admin"
           },
           {
+            "isSigner": true,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "payer"
+          },
+          {
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
-            "name": "payer"
+            "name": "rentRecipient"
           },
           {
             "isSigner": false,

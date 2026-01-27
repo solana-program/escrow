@@ -1,6 +1,13 @@
-use pinocchio::{error::ProgramError, Address};
+use alloc::vec::Vec;
+use pinocchio::{
+    account::AccountView,
+    cpi::invoke_with_bounds,
+    error::ProgramError,
+    instruction::{InstructionAccount, InstructionView},
+    Address, ProgramResult,
+};
 
-use crate::{assert_no_padding, require_len};
+use crate::{assert_no_padding, errors::EscrowProgramError, require_len, traits::ExtensionData};
 
 /// Hook points for escrow operations
 #[repr(u8)]
@@ -30,11 +37,58 @@ impl HookData {
         Self { hook_program }
     }
 
-    pub fn to_bytes(&self) -> [u8; Self::LEN] {
-        *self.hook_program.as_array()
+    /// Validates that the hook program account matches the stored address
+    pub fn validate(&self, remaining_accounts: &[AccountView]) -> ProgramResult {
+        let hook_program = remaining_accounts.first().ok_or(EscrowProgramError::HookProgramMismatch)?;
+        if hook_program.address() != &self.hook_program {
+            return Err(EscrowProgramError::HookProgramMismatch.into());
+        }
+        Ok(())
     }
 
-    pub fn from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
+    /// Validates and invokes the hook program.
+    ///
+    /// # Arguments
+    /// * `hook_point` - The hook point discriminator
+    /// * `remaining_accounts` - Remaining accounts slice: [hook_program, extra_accounts...]
+    /// * `core_accounts` - Core accounts to pass to hook (escrow, actor, mint, receipt, vault)
+    ///
+    /// # Returns
+    /// * `Ok(())` if hook succeeds
+    /// * `Err(HookRejected)` if hook returns error or remaining_accounts is invalid
+    pub fn invoke(
+        &self,
+        hook_point: HookPoint,
+        remaining_accounts: &[AccountView],
+        core_accounts: &[&AccountView],
+    ) -> ProgramResult {
+        self.validate(remaining_accounts)?;
+
+        let extra_accounts = remaining_accounts.get(1..).unwrap_or(&[]);
+        let all_accounts: Vec<&AccountView> = core_accounts.iter().copied().chain(extra_accounts.iter()).collect();
+
+        // Build instruction accounts - ALL accounts are read-only
+        let instruction_accounts: Vec<InstructionAccount> = all_accounts.iter().map(|acc| (*acc).into()).collect();
+
+        // Instruction data is just the 1-byte hook point discriminator
+        let instruction_data = [hook_point as u8];
+
+        let instruction = InstructionView {
+            program_id: &self.hook_program,
+            accounts: &instruction_accounts,
+            data: &instruction_data,
+        };
+
+        invoke_with_bounds::<16>(&instruction, &all_accounts).map_err(|_| EscrowProgramError::HookRejected.into())
+    }
+}
+
+impl ExtensionData for HookData {
+    fn to_bytes(&self) -> Vec<u8> {
+        self.hook_program.as_array().to_vec()
+    }
+
+    fn from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
         require_len!(data, Self::LEN);
 
         Ok(Self { hook_program: Address::new_from_array(data[0..32].try_into().unwrap()) })

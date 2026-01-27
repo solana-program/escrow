@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use pinocchio::error::ProgramError;
 
-use crate::{errors::EscrowProgramError, require_len};
+use crate::{errors::EscrowProgramError, require_len, traits::ExtensionData};
 
 /// Block token extensions data (stored in TLV format)
 ///
@@ -31,32 +31,6 @@ impl BlockTokenExtensionsData {
         1 + (self.count as usize * 2)
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::with_capacity(self.byte_len());
-        bytes.push(self.count);
-        for ext in &self.blocked_extensions[..self.count as usize] {
-            bytes.extend_from_slice(&ext.to_le_bytes());
-        }
-        bytes
-    }
-
-    pub fn from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
-        require_len!(data, 1);
-
-        let count = data[0];
-        let expected_len = 1 + (count as usize * 2);
-
-        require_len!(data, expected_len);
-
-        let mut blocked_extensions = Vec::with_capacity(count as usize);
-        for i in 0..count as usize {
-            let offset = 1 + (i * 2);
-            blocked_extensions.push(u16::from_le_bytes([data[offset], data[offset + 1]]));
-        }
-
-        Ok(Self { count, blocked_extensions })
-    }
-
     /// Check if a token extension type is blocked
     pub fn is_blocked(&self, extension_type: u16) -> bool {
         self.blocked_extensions.contains(&extension_type)
@@ -83,6 +57,34 @@ impl BlockTokenExtensionsData {
         self.count += 1;
 
         Ok(())
+    }
+}
+
+impl ExtensionData for BlockTokenExtensionsData {
+    fn to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::with_capacity(self.byte_len());
+        bytes.push(self.count);
+        for ext in &self.blocked_extensions[..self.count as usize] {
+            bytes.extend_from_slice(&ext.to_le_bytes());
+        }
+        bytes
+    }
+
+    fn from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
+        require_len!(data, 1);
+
+        let count = data[0];
+        let expected_len = 1 + (count as usize * 2);
+
+        require_len!(data, expected_len);
+
+        let mut blocked_extensions = Vec::with_capacity(count as usize);
+        for i in 0..count as usize {
+            let offset = 1 + (i * 2);
+            blocked_extensions.push(u16::from_le_bytes([data[offset], data[offset + 1]]));
+        }
+
+        Ok(Self { count, blocked_extensions })
     }
 }
 

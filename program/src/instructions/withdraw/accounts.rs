@@ -12,24 +12,26 @@ use crate::{
 /// Accounts for the Withdraw instruction
 ///
 /// # Account Layout
-/// 0. `[signer, writable]` payer - Receives rent from closed receipt
-/// 1. `[signer]` withdrawer - Must match receipt.depositor
-/// 2. `[]` escrow - Escrow PDA (signing authority for vault transfer)
-/// 3. `[]` extensions - Extensions PDA (optional, may be system-owned)
-/// 4. `[writable]` receipt - Deposit receipt to verify and close
-/// 5. `[writable]` vault - Escrow's vault token account (source)
-/// 6. `[writable]` withdrawer_token_account - Withdrawer's token account (destination)
-/// 7. `[]` mint - Token mint
-/// 8. `[]` token_program - SPL Token program
-/// 9. `[]` system_program - System program
-/// 10. `[]` event_authority - Event authority PDA
-/// 11. `[]` escrow_program - Current program
+/// 0. `[signer]` payer - Transaction fee payer
+/// 1. `[writable]` rent_recipient - Receives rent from closed receipt
+/// 2. `[signer]` withdrawer - Must match receipt.depositor
+/// 3. `[]` escrow - Escrow PDA (signing authority for vault transfer)
+/// 4. `[]` extensions - Extensions PDA (optional, may be system-owned)
+/// 5. `[writable]` receipt - Deposit receipt to verify and close
+/// 6. `[writable]` vault - Escrow's vault token account (source)
+/// 7. `[writable]` withdrawer_token_account - Withdrawer's token account (destination)
+/// 8. `[]` mint - Token mint
+/// 9. `[]` token_program - SPL Token program
+/// 10. `[]` system_program - System program
+/// 11. `[]` event_authority - Event authority PDA
+/// 12. `[]` escrow_program - Current program
 ///
 /// # Remaining Accounts (if hook configured)
 /// 0. `[]` hook_program - The hook program to invoke
 /// 1. ..N. `[]` extra accounts - Additional accounts to pass to the hook (all read-only)
 pub struct WithdrawAccounts<'a> {
     pub payer: &'a AccountView,
+    pub rent_recipient: &'a AccountView,
     pub withdrawer: &'a AccountView,
     pub escrow: &'a AccountView,
     pub extensions: &'a AccountView,
@@ -49,15 +51,16 @@ impl<'a> TryFrom<&'a [AccountView]> for WithdrawAccounts<'a> {
 
     #[inline(always)]
     fn try_from(accounts: &'a [AccountView]) -> Result<Self, Self::Error> {
-        let [payer, withdrawer, escrow, extensions, receipt, vault, withdrawer_token_account, mint, token_program, system_program, event_authority, escrow_program, remaining_accounts @ ..] =
+        let [payer, rent_recipient, withdrawer, escrow, extensions, receipt, vault, withdrawer_token_account, mint, token_program, system_program, event_authority, escrow_program, remaining_accounts @ ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        verify_signer(payer, true)?;
+        verify_signer(payer, false)?;
         verify_signer(withdrawer, false)?;
 
+        verify_writable(rent_recipient, true)?;
         verify_writable(receipt, true)?;
         verify_writable(vault, true)?;
         verify_writable(withdrawer_token_account, true)?;
@@ -79,6 +82,7 @@ impl<'a> TryFrom<&'a [AccountView]> for WithdrawAccounts<'a> {
 
         Ok(Self {
             payer,
+            rent_recipient,
             withdrawer,
             escrow,
             extensions,

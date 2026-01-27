@@ -1,7 +1,7 @@
 use pinocchio::{account::AccountView, entrypoint, error::ProgramError, Address, ProgramResult};
 
 use crate::{
-    processors::{
+    instructions::{
         process_add_timelock, process_allow_mint, process_block_mint, process_block_token_extension,
         process_create_escrow, process_deposit, process_emit_event, process_set_hook, process_update_admin,
         process_withdraw,

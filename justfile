@@ -29,10 +29,12 @@ fmt:
     @cd program && cargo clippy --all-targets -- -D warnings
     @cd tests && cargo clippy --all-targets -- -D warnings
     pnpm format
+    pnpm lint:fix
 
 check:
     cd program && cargo check --features idl
     pnpm run format:check
+    pnpm lint
 
 # Run unit tests
 unit-test:

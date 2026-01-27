@@ -4,9 +4,9 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 use crate::{
     events::TokenExtensionBlocked,
     instructions::BlockTokenExtension,
-    state::{BlockTokenExtensionsData, Escrow, ExtensionType, ExtensionsPda},
-    traits::{EventSerialize, PdaSeeds},
-    utils::{emit_event, update_or_append_extension, TlvReader},
+    state::{update_or_append_extension, BlockTokenExtensionsData, Escrow, ExtensionType, ExtensionsPda},
+    traits::{EventSerialize, ExtensionData, PdaSeeds},
+    utils::{emit_event, TlvReader},
 };
 
 /// Processes the BlockTokenExtension instruction.
@@ -39,7 +39,10 @@ pub fn process_block_token_extension(
         if ix.accounts.extensions.data_len() > 0 {
             let data = ix.accounts.extensions.try_borrow()?;
             let reader = TlvReader::new(&data);
-            reader.read_blocked_token_extensions().unwrap_or_else(|| BlockTokenExtensionsData::new(&[]).unwrap())
+            match reader.read_blocked_token_extensions() {
+                Some(data) => data,
+                None => BlockTokenExtensionsData::new(&[])?,
+            }
         } else {
             BlockTokenExtensionsData::new(&[])?
         }

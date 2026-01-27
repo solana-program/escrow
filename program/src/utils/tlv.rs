@@ -1,7 +1,9 @@
 use alloc::vec::Vec;
+use pinocchio::error::ProgramError;
 
-use crate::state::{
-    BlockTokenExtensionsData, EscrowExtensionsHeader, ExtensionType, HookData, TimelockData, TLV_HEADER_SIZE,
+use crate::{
+    state::{BlockTokenExtensionsData, EscrowExtensionsHeader, ExtensionType, HookData, TimelockData, TLV_HEADER_SIZE},
+    traits::ExtensionData,
 };
 
 /// Helper to read TLV extensions from account data
@@ -17,38 +19,44 @@ impl<'a> TlvReader<'a> {
     }
 
     /// Find and read a specific extension type
-    pub fn find_extension(&self, ext_type: ExtensionType) -> Option<&'a [u8]> {
+    pub fn find_extension(&self, ext_type: ExtensionType) -> Result<Option<&'a [u8]>, ProgramError> {
         let mut offset = self.offset;
         while offset + TLV_HEADER_SIZE <= self.data.len() {
-            let type_bytes = u16::from_le_bytes(self.data[offset..offset + 2].try_into().unwrap());
-            let length = u16::from_le_bytes(self.data[offset + 2..offset + 4].try_into().unwrap()) as usize;
+            let type_bytes = u16::from_le_bytes(
+                self.data[offset..offset + 2].try_into().map_err(|_| ProgramError::InvalidAccountData)?,
+            );
+            let length = u16::from_le_bytes(
+                self.data[offset + 2..offset + 4].try_into().map_err(|_| ProgramError::InvalidAccountData)?,
+            ) as usize;
 
             if offset + TLV_HEADER_SIZE + length > self.data.len() {
                 break;
             }
 
             if type_bytes == ext_type as u16 {
-                return Some(&self.data[offset + TLV_HEADER_SIZE..offset + TLV_HEADER_SIZE + length]);
+                return Ok(Some(&self.data[offset + TLV_HEADER_SIZE..offset + TLV_HEADER_SIZE + length]));
             }
 
             offset += TLV_HEADER_SIZE + length;
         }
-        None
+        Ok(None)
     }
 
     /// Read timelock extension if present
     pub fn read_timelock(&self) -> Option<TimelockData> {
-        self.find_extension(ExtensionType::Timelock).and_then(|data| TimelockData::from_bytes(data).ok())
+        self.find_extension(ExtensionType::Timelock).ok().flatten().and_then(|data| TimelockData::from_bytes(data).ok())
     }
 
     /// Read hook extension if present
     pub fn read_hook(&self) -> Option<HookData> {
-        self.find_extension(ExtensionType::Hook).and_then(|data| HookData::from_bytes(data).ok())
+        self.find_extension(ExtensionType::Hook).ok().flatten().and_then(|data| HookData::from_bytes(data).ok())
     }
 
     /// Read blocked token extensions if present
     pub fn read_blocked_token_extensions(&self) -> Option<BlockTokenExtensionsData> {
         self.find_extension(ExtensionType::BlockedTokenExtensions)
+            .ok()
+            .flatten()
             .and_then(|data| BlockTokenExtensionsData::from_bytes(data).ok())
     }
 }
