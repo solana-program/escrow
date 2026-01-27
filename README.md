@@ -15,3 +15,15 @@
 | Withdraw                | 15342 | 23462 | 30509 | 11    |
 
 <!-- CU_SUMMARY_END -->
+
+## Possible Improvements
+
+The following enhancements could be considered for future iterations of the program:
+
+1. **Global Omni Vaults per Mint** - Implement shared vault accounts per mint across all escrows rather than individual vaults per escrow per mint. This would reduce account overhead and simplify token management at scale.
+
+2. **Block All Token Extensions Option** - Add a configuration flag within the blocked extension data to reject all token extensions by default, providing a simpler security posture for escrows that require only standard SPL tokens or vanilla SPL 2022 tokens.
+
+3. **Partial Withdrawals** - Enable withdrawals of a specified amount rather than requiring full balance withdrawals, allowing for more flexible fund disbursement patterns.
+
+4. **TypeScript Client Testing** - Develop a comprehensive test suite for the generated TypeScript clients to ensure client-side reliability and validate the end-to-end integration with the on-chain program.
