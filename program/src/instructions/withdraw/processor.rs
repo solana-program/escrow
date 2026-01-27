@@ -4,12 +4,12 @@ use pinocchio_token_2022::instructions::TransferChecked;
 use crate::{
     events::WithdrawEvent,
     instructions::Withdraw,
-    state::{Escrow, ExtensionType, HookPoint, Receipt},
-    traits::{AccountDeserialize, EventSerialize},
-    utils::{
-        close_pda_account, emit_event, get_and_validate_hook, get_mint_decimals, invoke_hook, validate_extensions,
-        ValidationContext,
+    state::{
+        get_extensions_from_account, validate_extensions_pda, Escrow, ExtensionType, HookData, HookPoint, Receipt,
+        TimelockData,
     },
+    traits::{AccountDeserialize, EventSerialize, ExtensionData},
+    utils::{close_pda_account, emit_event, get_mint_decimals},
 };
 
 /// Processes the Withdraw instruction.
@@ -35,17 +35,24 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
         (receipt.amount, receipt.receipt_seed, receipt.mint, receipt.deposited_at)
     };
 
-    // Validate extensions
-    let ctx = ValidationContext { deposited_at };
-    validate_extensions(ix.accounts.escrow, ix.accounts.extensions, program_id, &[ExtensionType::Timelock], &ctx)?;
+    // Validate extensions PDA
+    validate_extensions_pda(ix.accounts.escrow, ix.accounts.extensions, program_id)?;
 
-    // Check once if hook is configured
-    let hook_data = get_and_validate_hook(ix.accounts.extensions, ix.accounts.remaining_accounts)?;
+    // Get timelock and hook extensions in single pass
+    let exts = get_extensions_from_account(ix.accounts.extensions, &[ExtensionType::Timelock, ExtensionType::Hook])?;
+
+    // Validate timelock if present
+    if let Some(ref timelock_bytes) = exts[0] {
+        let timelock = TimelockData::from_bytes(timelock_bytes)?;
+        timelock.validate(deposited_at)?;
+    }
+
+    // Parse hook if present
+    let hook_data = exts[1].as_ref().map(|b| HookData::from_bytes(b)).transpose()?;
 
     // Invoke pre-withdraw hook if configured
-    if let Some(hook_data) = hook_data {
-        invoke_hook(
-            &hook_data,
+    if let Some(ref hook) = hook_data {
+        hook.invoke(
             HookPoint::PreWithdraw,
             ix.accounts.remaining_accounts,
             &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint, ix.accounts.receipt],
@@ -76,9 +83,8 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
     close_pda_account(ix.accounts.receipt, ix.accounts.rent_recipient)?;
 
     // Invoke post-withdraw hook if configured (receipt is closed, don't pass it)
-    if let Some(hook_data) = hook_data {
-        invoke_hook(
-            &hook_data,
+    if let Some(ref hook) = hook_data {
+        hook.invoke(
             HookPoint::PostWithdraw,
             ix.accounts.remaining_accounts,
             &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint],

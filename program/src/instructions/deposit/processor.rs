@@ -12,9 +12,11 @@ use crate::{
     errors::EscrowProgramError,
     events::DepositEvent,
     instructions::Deposit,
-    state::{AllowedMint, AllowedMintPda, Escrow, HookPoint, Receipt},
-    traits::{AccountSerialize, AccountSize, EventSerialize, PdaSeeds},
-    utils::{create_pda_account, emit_event, get_and_validate_hook, get_mint_decimals, invoke_hook},
+    state::{
+        get_extensions_from_account, AllowedMint, AllowedMintPda, Escrow, ExtensionType, HookData, HookPoint, Receipt,
+    },
+    traits::{AccountSerialize, AccountSize, EventSerialize, ExtensionData, PdaSeeds},
+    utils::{create_pda_account, emit_event, get_mint_decimals},
 };
 
 /// Processes the Deposit instruction.
@@ -68,13 +70,13 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
     receipt.write_to_slice(&mut receipt_data_slice)?;
     drop(receipt_data_slice);
 
-    // Check once if hook is configured
-    let hook_data = get_and_validate_hook(ix.accounts.extensions, ix.accounts.remaining_accounts)?;
+    // Get hook extension if present
+    let exts = get_extensions_from_account(ix.accounts.extensions, &[ExtensionType::Hook])?;
+    let hook_data = exts[0].as_ref().map(|b| HookData::from_bytes(b)).transpose()?;
 
     // Invoke pre-deposit hook if configured
-    if let Some(hook_data) = hook_data {
-        invoke_hook(
-            &hook_data,
+    if let Some(ref hook) = hook_data {
+        hook.invoke(
             HookPoint::PreDeposit,
             ix.accounts.remaining_accounts,
             &[ix.accounts.escrow, ix.accounts.depositor, ix.accounts.mint, ix.accounts.receipt],
@@ -96,9 +98,8 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
     .invoke()?;
 
     // Invoke post-deposit hook if configured
-    if let Some(hook_data) = hook_data {
-        invoke_hook(
-            &hook_data,
+    if let Some(ref hook) = hook_data {
+        hook.invoke(
             HookPoint::PostDeposit,
             ix.accounts.remaining_accounts,
             &[ix.accounts.escrow, ix.accounts.depositor, ix.accounts.mint, ix.accounts.receipt],

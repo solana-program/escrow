@@ -4,9 +4,9 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 use crate::{
     events::TimelockAddedEvent,
     instructions::AddTimelock,
-    state::{Escrow, ExtensionType, ExtensionsPda, TimelockData},
+    state::{append_extension, Escrow, ExtensionType, ExtensionsPda, TimelockData},
     traits::{EventSerialize, PdaSeeds},
-    utils::{append_extension, emit_event, TlvWriter},
+    utils::{emit_event, TlvWriter},
 };
 
 /// Processes the AddTimelock instruction.

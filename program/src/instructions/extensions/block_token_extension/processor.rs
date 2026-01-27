@@ -4,9 +4,9 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 use crate::{
     events::TokenExtensionBlocked,
     instructions::BlockTokenExtension,
-    state::{BlockTokenExtensionsData, Escrow, ExtensionType, ExtensionsPda},
-    traits::{EventSerialize, PdaSeeds},
-    utils::{emit_event, update_or_append_extension, TlvReader},
+    state::{update_or_append_extension, BlockTokenExtensionsData, Escrow, ExtensionType, ExtensionsPda},
+    traits::{EventSerialize, ExtensionData, PdaSeeds},
+    utils::{emit_event, TlvReader},
 };
 
 /// Processes the BlockTokenExtension instruction.

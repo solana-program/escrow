@@ -1,8 +1,9 @@
 use alloc::vec::Vec;
 use pinocchio::error::ProgramError;
 
-use crate::state::{
-    BlockTokenExtensionsData, EscrowExtensionsHeader, ExtensionType, HookData, TimelockData, TLV_HEADER_SIZE,
+use crate::{
+    state::{BlockTokenExtensionsData, EscrowExtensionsHeader, ExtensionType, HookData, TimelockData, TLV_HEADER_SIZE},
+    traits::ExtensionData,
 };
 
 /// Helper to read TLV extensions from account data
