@@ -1,5 +1,6 @@
 use alloc::vec::Vec;
 use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, ProgramResult};
+use pinocchio_associated_token_account::instructions::CreateIdempotent;
 
 use crate::{
     events::AllowMintEvent,
@@ -51,6 +52,17 @@ pub fn process_allow_mint(program_id: &Address, accounts: &[AccountView], instru
     let mut allowed_mint_data_slice = ix.accounts.allowed_mint.try_borrow_mut()?;
     allowed_mint.write_to_slice(&mut allowed_mint_data_slice)?;
     drop(allowed_mint_data_slice);
+
+    // Create vault ATA for the escrow
+    CreateIdempotent {
+        funding_account: ix.accounts.payer,
+        account: ix.accounts.vault,
+        wallet: ix.accounts.escrow,
+        mint: ix.accounts.mint,
+        system_program: ix.accounts.system_program,
+        token_program: ix.accounts.token_program,
+    }
+    .invoke()?;
 
     // Emit event via CPI
     let event = AllowMintEvent::new(*ix.accounts.escrow.address(), *ix.accounts.mint.address());

@@ -39,7 +39,10 @@ pub fn process_block_token_extension(
         if ix.accounts.extensions.data_len() > 0 {
             let data = ix.accounts.extensions.try_borrow()?;
             let reader = TlvReader::new(&data);
-            reader.read_blocked_token_extensions().unwrap_or_else(|| BlockTokenExtensionsData::new(&[]).unwrap())
+            match reader.read_blocked_token_extensions() {
+                Some(data) => data,
+                None => BlockTokenExtensionsData::new(&[])?,
+            }
         } else {
             BlockTokenExtensionsData::new(&[])?
         }

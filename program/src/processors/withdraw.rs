@@ -18,12 +18,11 @@ use crate::{
 pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruction_data: &[u8]) -> ProgramResult {
     let ix = Withdraw::try_from((instruction_data, accounts))?;
 
-    // Read and validate escrow PDA
-    let escrow_bump = {
+    // Validate escrow PDA
+    {
         let escrow_data = ix.accounts.escrow.try_borrow()?;
-        let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
-        escrow.bump
-    };
+        let _escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
+    }
 
     // Read and validate receipt
     let (amount, receipt_seed, mint, deposited_at) = {
@@ -59,7 +58,7 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
     {
         let escrow_data = ix.accounts.escrow.try_borrow()?;
         let escrow = Escrow::from_bytes(&escrow_data)?;
-        escrow.invoke_signed(escrow_bump, |signers| {
+        escrow.with_signer(|signers| {
             TransferChecked {
                 from: ix.accounts.vault,
                 mint: ix.accounts.mint,

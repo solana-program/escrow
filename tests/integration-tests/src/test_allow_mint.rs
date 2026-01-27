@@ -1,13 +1,14 @@
 use crate::{
     fixtures::{AllowMintFixture, AllowMintSetup},
     utils::{
-        assert_account_exists, assert_allowed_mint_account, assert_custom_error, assert_instruction_error,
+        assert_account_exists, assert_allowed_mint_account, assert_escrow_error, assert_instruction_error,
         find_allowed_mint_pda, test_missing_signer, test_not_writable, test_wrong_current_program,
-        test_wrong_system_program, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
+        test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
 use escrow_program_client::instructions::AllowMintBuilder;
 use solana_sdk::{instruction::InstructionError, signature::Signer};
+use spl_associated_token_account::get_associated_token_address;
 use spl_token_2022::extension::ExtensionType;
 
 // ============================================================================
@@ -41,8 +42,8 @@ fn test_allow_mint_wrong_current_program() {
 #[test]
 fn test_allow_mint_invalid_event_authority() {
     let mut ctx = TestContext::new();
-    let error = AllowMintFixture::build_valid(&mut ctx).with_account_at(8, RANDOM_PUBKEY).send_expect_error(&mut ctx);
-    assert_custom_error(error, 2);
+    let error = AllowMintFixture::build_valid(&mut ctx).with_account_at(10, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::InvalidEventAuthority);
 }
 
 #[test]
@@ -68,15 +69,17 @@ fn test_allow_mint_wrong_admin() {
         .admin(wrong_admin.pubkey())
         .escrow(setup.escrow_pda)
         .escrow_extensions(setup.escrow_extensions_pda)
-        .mint(setup.mint.pubkey())
+        .mint(setup.mint_pubkey)
         .allowed_mint(setup.allowed_mint_pda)
+        .vault(setup.vault)
+        .token_program(setup.token_program)
         .bump(setup.allowed_mint_bump)
         .instruction();
 
     let test_ix = crate::utils::TestInstruction { instruction, signers: vec![wrong_admin], name: "AllowMint" };
 
     let error = test_ix.send_expect_error(&mut ctx);
-    assert_custom_error(error, 1);
+    assert_escrow_error(error, EscrowError::InvalidAdmin);
 }
 
 #[test]
@@ -96,7 +99,7 @@ fn test_allow_mint_wrong_mint() {
 #[test]
 fn test_allow_mint_wrong_token_program() {
     let mut ctx = TestContext::new();
-    let error = AllowMintFixture::build_valid(&mut ctx).with_account_at(6, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = AllowMintFixture::build_valid(&mut ctx).with_account_at(7, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::IncorrectProgramId);
 }
 
@@ -141,6 +144,7 @@ fn test_allow_mint_multiple_mints() {
     ctx.create_mint(&second_mint, &ctx.payer.pubkey(), 9);
 
     let (second_allowed_mint_pda, second_bump) = find_allowed_mint_pda(&setup.escrow_pda, &second_mint.pubkey());
+    let second_vault = get_associated_token_address(&setup.escrow_pda, &second_mint.pubkey());
 
     let instruction = AllowMintBuilder::new()
         .payer(ctx.payer.pubkey())
@@ -149,6 +153,8 @@ fn test_allow_mint_multiple_mints() {
         .escrow_extensions(setup.escrow_extensions_pda)
         .mint(second_mint.pubkey())
         .allowed_mint(second_allowed_mint_pda)
+        .vault(second_vault)
+        .token_program(setup.token_program)
         .bump(second_bump)
         .instruction();
 
@@ -188,7 +194,7 @@ fn test_allow_mint_rejects_permanent_delegate() {
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
 
-    assert_custom_error(error, 9); // PermanentDelegateNotAllowed
+    assert_escrow_error(error, EscrowError::PermanentDelegateNotAllowed);
 }
 
 #[test]
@@ -199,7 +205,7 @@ fn test_allow_mint_rejects_non_transferable() {
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
 
-    assert_custom_error(error, 10); // NonTransferableNotAllowed
+    assert_escrow_error(error, EscrowError::NonTransferableNotAllowed);
 }
 
 #[test]
@@ -210,7 +216,7 @@ fn test_allow_mint_rejects_pausable() {
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
 
-    assert_custom_error(error, 11); // PausableNotAllowed
+    assert_escrow_error(error, EscrowError::PausableNotAllowed);
 }
 
 // ============================================================================
@@ -227,7 +233,7 @@ fn test_allow_mint_rejects_escrow_blocked_extension() {
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
 
-    assert_custom_error(error, 8); // MintNotAllowed
+    assert_escrow_error(error, EscrowError::MintNotAllowed);
 }
 
 #[test]
@@ -243,4 +249,46 @@ fn test_allow_mint_accepts_mint_without_escrow_blocked_extension() {
 
     let test_ix = setup.build_instruction(&ctx);
     test_ix.send_expect_success(&mut ctx);
+}
+
+// ============================================================================
+// Vault ATA Creation Tests
+// ============================================================================
+
+#[test]
+fn test_allow_mint_creates_vault_ata() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+
+    // Verify vault ATA does not exist before allow_mint
+    assert!(ctx.svm.get_account(&setup.vault).is_none());
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    // Verify vault ATA exists after allow_mint
+    assert_account_exists(&ctx, &setup.vault);
+
+    // Verify vault is owned by the token program
+    let vault_account = ctx.svm.get_account(&setup.vault).unwrap();
+    assert_eq!(vault_account.owner, setup.token_program);
+}
+
+#[test]
+fn test_allow_mint_creates_vault_ata_token_2022() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new_token_2022(&mut ctx);
+
+    // Verify vault ATA does not exist before allow_mint
+    assert!(ctx.svm.get_account(&setup.vault).is_none());
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    // Verify vault ATA exists after allow_mint
+    assert_account_exists(&ctx, &setup.vault);
+
+    // Verify vault is owned by Token-2022 program
+    let vault_account = ctx.svm.get_account(&setup.vault).unwrap();
+    assert_eq!(vault_account.owner, spl_token_2022::ID);
 }

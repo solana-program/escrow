@@ -10,6 +10,15 @@ use escrow_program_client::{
 };
 use solana_sdk::{instruction::InstructionError, pubkey::Pubkey, transaction::TransactionError};
 
+pub use escrow_program_client::errors::EscrowProgramError as EscrowError;
+
+// Since the error when hook program rejects is the error from the CPI call that's just returned directly.
+pub const TEST_HOOK_DENY_ERROR: u32 = 1;
+
+pub fn assert_escrow_error(tx_error: TransactionError, expected: EscrowError) {
+    assert_instruction_error(tx_error, InstructionError::Custom(expected as u32));
+}
+
 pub fn assert_account_exists(context: &TestContext, pubkey: &Pubkey) {
     let account = context.get_account(pubkey).unwrap_or_else(|| panic!("Account {pubkey} should exist"));
     assert!(!account.data.is_empty(), "Account data should not be empty");

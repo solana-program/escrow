@@ -94,11 +94,11 @@ impl Escrow {
 
     /// Execute a CPI with this escrow PDA as signer
     #[inline(always)]
-    pub fn invoke_signed<F, R>(&self, bump: u8, f: F) -> R
+    pub fn with_signer<F, R>(&self, f: F) -> R
     where
         F: FnOnce(&[Signer<'_, '_>]) -> R,
     {
-        let bump_seed = [bump];
+        let bump_seed = [self.bump];
         let seeds = [Seed::from(Self::PREFIX), Seed::from(self.escrow_seed.as_ref()), Seed::from(bump_seed.as_slice())];
         let signers = [Signer::from(&seeds)];
         f(&signers)

@@ -34,7 +34,7 @@ pub fn get_and_validate_hook(
         // Verify hook_program account is provided and matches the stored address
         let hook_program = remaining_accounts.first().ok_or(EscrowProgramError::HookProgramMismatch)?;
         if hook_program.address() != &hook_data.hook_program {
-            return Err(EscrowProgramError::HookRejected.into());
+            return Err(EscrowProgramError::HookProgramMismatch.into());
         }
     }
 

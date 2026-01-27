@@ -5,57 +5,61 @@ use thiserror::Error;
 /// Errors that may be returned by the Escrow Program.
 #[derive(Clone, Debug, Eq, PartialEq, Error, CodamaErrors)]
 pub enum EscrowProgramError {
-    /// (1) Escrow ID invalid or does not respect rules
+    /// (0) Escrow ID invalid or does not respect rules
     #[error("Escrow ID invalid or does not respect rules")]
     InvalidEscrowId,
 
-    /// (2) Admin invalid or does not match escrow admin
+    /// (1) Admin invalid or does not match escrow admin
     #[error("Admin invalid or does not match escrow admin")]
     InvalidAdmin,
 
-    /// (3) Event authority PDA is invalid
+    /// (2) Event authority PDA is invalid
     #[error("Event authority PDA is invalid")]
     InvalidEventAuthority,
 
-    /// (4) Timelock has not expired yet
+    /// (3) Timelock has not expired yet
     #[error("Timelock has not expired yet")]
     TimelockNotExpired,
 
-    /// (5) External hook rejected the operation
+    /// (4) External hook rejected the operation
     #[error("External hook rejected the operation")]
     HookRejected,
 
-    /// (6) Withdrawer does not match receipt depositor
+    /// (5) Withdrawer does not match receipt depositor
     #[error("Withdrawer does not match receipt depositor")]
     InvalidWithdrawer,
 
-    /// (7) Receipt escrow does not match escrow
+    /// (6) Receipt escrow does not match escrow
     #[error("Receipt escrow does not match escrow")]
     InvalidReceiptEscrow,
 
-    /// (8) Hook program mismatch
+    /// (7) Hook program mismatch
     #[error("Hook program mismatch")]
     HookProgramMismatch,
 
-    /// (9) Mint is not allowed for this escrow
+    /// (8) Mint is not allowed for this escrow
     #[error("Mint is not allowed for this escrow")]
     MintNotAllowed,
 
-    /// (10) Mint has PermanentDelegate extension which is not allowed
+    /// (9) Mint has PermanentDelegate extension which is not allowed
     #[error("Mint has PermanentDelegate extension which is not allowed")]
     PermanentDelegateNotAllowed,
 
-    /// (11) Mint has NonTransferable extension which is not allowed
+    /// (10) Mint has NonTransferable extension which is not allowed
     #[error("Mint has NonTransferable extension which is not allowed")]
     NonTransferableNotAllowed,
 
-    /// (12) Mint has Pausable extension which is not allowed
+    /// (11) Mint has Pausable extension which is not allowed
     #[error("Mint has Pausable extension which is not allowed")]
     PausableNotAllowed,
 
-    /// (13) Token extension already blocked
+    /// (12) Token extension already blocked
     #[error("Token extension already blocked")]
     TokenExtensionAlreadyBlocked,
+
+    /// (13) Zero deposit amount
+    #[error("Zero deposit amount")]
+    ZeroDepositAmount,
 }
 
 impl From<EscrowProgramError> for ProgramError {

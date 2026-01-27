@@ -95,13 +95,16 @@ pub enum EscrowProgramInstruction {
     Withdraw {} = 5,
 
     /// Allow a token mint for deposits into an escrow.
+    /// Also creates the vault ATA for the escrow to hold tokens of this mint.
     #[codama(account(name = "payer", signer, writable))]
     #[codama(account(name = "admin", signer))]
     #[codama(account(name = "escrow"))]
     #[codama(account(name = "escrow_extensions"))]
     #[codama(account(name = "mint"))]
     #[codama(account(name = "allowed_mint", writable))]
+    #[codama(account(name = "vault", writable))]
     #[codama(account(name = "token_program"))]
+    #[codama(account(name = "associated_token_program"))]
     #[codama(account(name = "system_program"))]
     #[codama(account(name = "event_authority"))]
     #[codama(account(name = "escrow_program"))]

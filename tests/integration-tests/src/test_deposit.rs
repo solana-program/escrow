@@ -3,7 +3,7 @@ use crate::{
     utils::{
         assert_custom_error, assert_instruction_error, find_receipt_pda, test_empty_data, test_missing_signer,
         test_not_writable, test_wrong_current_program, test_wrong_owner, test_wrong_system_program,
-        test_wrong_token_program, TestContext, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ID,
+        test_wrong_token_program, TestContext, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
     },
 };
 use escrow_program_client::instructions::DepositBuilder;
@@ -216,5 +216,5 @@ fn test_deposit_with_hook_rejected() {
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
 
-    assert_custom_error(error, 1);
+    assert_custom_error(error, TEST_HOOK_DENY_ERROR);
 }

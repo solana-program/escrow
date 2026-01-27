@@ -34,7 +34,7 @@ pub fn append_extension<const N: usize>(
 
         // Check for duplicate extension
         let reader = TlvReader::new(&data);
-        if reader.find_extension(ext_type).is_some() {
+        if reader.find_extension(ext_type)?.is_some() {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 
@@ -169,7 +169,7 @@ pub fn update_or_append_extension<const N: usize>(
     } else {
         let data = extensions.try_borrow()?;
         let reader = TlvReader::new(&data);
-        let extension_exists = reader.find_extension(ext_type).is_some();
+        let extension_exists = reader.find_extension(ext_type)?.is_some();
         drop(data);
 
         if extension_exists {

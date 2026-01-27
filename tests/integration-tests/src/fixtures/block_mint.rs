@@ -11,7 +11,7 @@ use crate::utils::TestContext;
 pub struct BlockMintSetup {
     pub escrow_pda: Pubkey,
     pub admin: Keypair,
-    pub mint: Keypair,
+    pub mint_pubkey: Pubkey,
     pub allowed_mint_pda: Pubkey,
     pub token_program: Pubkey,
 }
@@ -34,7 +34,7 @@ impl BlockMintSetup {
         Self {
             escrow_pda: allow_mint_setup.escrow_pda,
             admin: allow_mint_setup.admin,
-            mint: allow_mint_setup.mint,
+            mint_pubkey: allow_mint_setup.mint_pubkey,
             allowed_mint_pda: allow_mint_setup.allowed_mint_pda,
             token_program: allow_mint_setup.token_program,
         }
@@ -45,7 +45,7 @@ impl BlockMintSetup {
             .admin(self.admin.pubkey())
             .payer(ctx.payer.pubkey())
             .escrow(self.escrow_pda)
-            .mint(self.mint.pubkey())
+            .mint(self.mint_pubkey)
             .allowed_mint(self.allowed_mint_pda)
             .token_program(self.token_program)
             .instruction();

@@ -5,6 +5,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},
 };
+use spl_associated_token_account::{get_associated_token_address, get_associated_token_address_with_program_id};
 use spl_token_2022::{extension::ExtensionType, ID as TOKEN_2022_PROGRAM_ID};
 use spl_token_interface::ID as TOKEN_PROGRAM_ID;
 
@@ -12,9 +13,10 @@ pub struct AllowMintSetup {
     pub escrow_pda: Pubkey,
     pub escrow_extensions_pda: Pubkey,
     pub admin: Keypair,
-    pub mint: Keypair,
+    pub mint_pubkey: Pubkey,
     pub allowed_mint_pda: Pubkey,
     pub allowed_mint_bump: u8,
+    pub vault: Pubkey,
     pub token_program: Pubkey,
 }
 
@@ -53,8 +55,9 @@ impl AllowMintSetup {
             .admin(self.admin.pubkey())
             .escrow(self.escrow_pda)
             .escrow_extensions(self.escrow_extensions_pda)
-            .mint(self.mint.pubkey())
+            .mint(self.mint_pubkey)
             .allowed_mint(self.allowed_mint_pda)
+            .vault(self.vault)
             .token_program(self.token_program)
             .bump(self.allowed_mint_bump)
             .instruction();
@@ -68,11 +71,24 @@ pub struct AllowMintSetupBuilder<'a> {
     token_program: Pubkey,
     mint_extension: Option<ExtensionType>,
     blocked_extensions: Vec<ExtensionType>,
+    existing_mint: Option<Pubkey>,
 }
 
 impl<'a> AllowMintSetupBuilder<'a> {
     fn new(ctx: &'a mut TestContext) -> Self {
-        Self { ctx, token_program: TOKEN_PROGRAM_ID, mint_extension: None, blocked_extensions: Vec::new() }
+        Self {
+            ctx,
+            token_program: TOKEN_PROGRAM_ID,
+            mint_extension: None,
+            blocked_extensions: Vec::new(),
+            existing_mint: None,
+        }
+    }
+
+    pub fn with_existing_mint(mut self, mint: Pubkey, token_program: Pubkey) -> Self {
+        self.existing_mint = Some(mint);
+        self.token_program = token_program;
+        self
     }
 
     pub fn token_2022(mut self) -> Self {
@@ -125,36 +141,84 @@ impl<'a> AllowMintSetupBuilder<'a> {
             self.ctx.send_transaction(block_ext_ix, &[&admin]).unwrap();
         }
 
-        let mint = Keypair::new();
-        let token_program = if self.mint_extension.is_some() { TOKEN_2022_PROGRAM_ID } else { self.token_program };
+        let (mint_pubkey, token_program) = if let Some(existing) = self.existing_mint {
+            (existing, self.token_program)
+        } else {
+            let mint = Keypair::new();
+            let token_program = if self.mint_extension.is_some() { TOKEN_2022_PROGRAM_ID } else { self.token_program };
 
-        match self.mint_extension {
-            Some(ext) => {
-                self.ctx.create_token_2022_mint_with_extension(&mint, &self.ctx.payer.pubkey(), 6, ext);
+            match self.mint_extension {
+                Some(ext) => {
+                    self.ctx.create_token_2022_mint_with_extension(&mint, &self.ctx.payer.pubkey(), 6, ext);
+                }
+                None if token_program == TOKEN_2022_PROGRAM_ID => {
+                    self.ctx.create_token_2022_mint(&mint, &self.ctx.payer.pubkey(), 6);
+                }
+                None => {
+                    self.ctx.create_mint(&mint, &self.ctx.payer.pubkey(), 6);
+                }
             }
-            None if token_program == TOKEN_2022_PROGRAM_ID => {
-                self.ctx.create_token_2022_mint(&mint, &self.ctx.payer.pubkey(), 6);
-            }
-            None => {
-                self.ctx.create_mint(&mint, &self.ctx.payer.pubkey(), 6);
-            }
-        }
 
-        let (allowed_mint_pda, allowed_mint_bump) = find_allowed_mint_pda(&escrow_pda, &mint.pubkey());
+            (mint.pubkey(), token_program)
+        };
+
+        let (allowed_mint_pda, allowed_mint_bump) = find_allowed_mint_pda(&escrow_pda, &mint_pubkey);
+
+        // Derive vault ATA address
+        let vault = if token_program == TOKEN_2022_PROGRAM_ID {
+            get_associated_token_address_with_program_id(&escrow_pda, &mint_pubkey, &TOKEN_2022_PROGRAM_ID)
+        } else {
+            get_associated_token_address(&escrow_pda, &mint_pubkey)
+        };
 
         AllowMintSetup {
             escrow_pda,
             escrow_extensions_pda,
             admin,
-            mint,
+            mint_pubkey,
             allowed_mint_pda,
             allowed_mint_bump,
+            vault,
             token_program,
         }
     }
 }
 
 pub struct AllowMintFixture;
+
+impl AllowMintFixture {
+    pub fn build_with_escrow_and_mint(
+        ctx: &mut TestContext,
+        escrow_pda: Pubkey,
+        admin: Keypair,
+        mint: Pubkey,
+        token_program: Pubkey,
+    ) -> TestInstruction {
+        let (escrow_extensions_pda, _) = find_extensions_pda(&escrow_pda);
+        let (allowed_mint_pda, allowed_mint_bump) = find_allowed_mint_pda(&escrow_pda, &mint);
+
+        // Derive vault ATA address
+        let vault = if token_program == TOKEN_2022_PROGRAM_ID {
+            get_associated_token_address_with_program_id(&escrow_pda, &mint, &TOKEN_2022_PROGRAM_ID)
+        } else {
+            get_associated_token_address(&escrow_pda, &mint)
+        };
+
+        let instruction = AllowMintBuilder::new()
+            .payer(ctx.payer.pubkey())
+            .admin(admin.pubkey())
+            .escrow(escrow_pda)
+            .escrow_extensions(escrow_extensions_pda)
+            .mint(mint)
+            .allowed_mint(allowed_mint_pda)
+            .vault(vault)
+            .token_program(token_program)
+            .bump(allowed_mint_bump)
+            .instruction();
+
+        TestInstruction { instruction, signers: vec![admin], name: Self::INSTRUCTION_NAME }
+    }
+}
 
 impl InstructionTestFixture for AllowMintFixture {
     const INSTRUCTION_NAME: &'static str = "AllowMint";
@@ -174,16 +238,17 @@ impl InstructionTestFixture for AllowMintFixture {
     /// Account indices that must be writable:
     /// 0: payer
     /// 5: allowed_mint
+    /// 6: vault
     fn required_writable() -> &'static [usize] {
-        &[0, 5]
+        &[0, 5, 6]
     }
 
     fn system_program_index() -> Option<usize> {
-        Some(7)
+        Some(9)
     }
 
     fn current_program_index() -> Option<usize> {
-        Some(9)
+        Some(11)
     }
 
     fn data_len() -> usize {

@@ -1,7 +1,6 @@
 use escrow_program_client::instructions::{
-    AddTimelockBuilder, AllowMintBuilder, CreatesEscrowBuilder, DepositBuilder, SetHookBuilder, WithdrawBuilder,
+    AddTimelockBuilder, AllowMintBuilder, CreatesEscrowBuilder, DepositBuilder, WithdrawBuilder,
 };
-use solana_address::Address;
 use solana_sdk::{
     instruction::AccountMeta,
     pubkey::Pubkey,
@@ -10,7 +9,7 @@ use solana_sdk::{
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use spl_token_interface::ID as TOKEN_PROGRAM_ID;
 
-use crate::fixtures::DEFAULT_DEPOSIT_AMOUNT;
+use crate::fixtures::{SetHookFixture, DEFAULT_DEPOSIT_AMOUNT};
 use crate::utils::traits::{InstructionTestFixture, TestInstruction};
 use crate::utils::{find_allowed_mint_pda, find_escrow_pda, find_extensions_pda, find_receipt_pda, TestContext};
 
@@ -57,6 +56,13 @@ impl WithdrawSetup {
 
     pub fn new_token_2022_with_hook(ctx: &mut TestContext, hook_program: Pubkey) -> Self {
         Self::builder(ctx).token_2022().hook_program(hook_program).build()
+    }
+
+    pub fn set_hook(&mut self, ctx: &mut TestContext, hook_program: Pubkey) {
+        let test_ix =
+            SetHookFixture::build_with_escrow(ctx, self.escrow_pda, self.admin.insecure_clone(), hook_program);
+        test_ix.send_expect_success(ctx);
+        self.hook_program = Some(hook_program);
     }
 
     pub fn build_instruction(&self, ctx: &TestContext) -> TestInstruction {
@@ -145,16 +151,8 @@ impl<'a> WithdrawSetupBuilder<'a> {
         }
 
         if let Some(hook_id) = self.hook_program {
-            let set_hook_ix = SetHookBuilder::new()
-                .payer(self.ctx.payer.pubkey())
-                .admin(admin.pubkey())
-                .escrow(escrow_pda)
-                .extensions(extensions_pda)
-                .extensions_bump(extensions_bump)
-                .hook_program(Address::from(hook_id.to_bytes()))
-                .instruction();
-
-            self.ctx.send_transaction(set_hook_ix, &[&admin]).unwrap();
+            let test_ix = SetHookFixture::build_with_escrow(self.ctx, escrow_pda, admin.insecure_clone(), hook_id);
+            test_ix.send_expect_success(self.ctx);
         }
 
         let mint = Keypair::new();
@@ -178,6 +176,7 @@ impl<'a> WithdrawSetupBuilder<'a> {
             .escrow_extensions(extensions_pda)
             .mint(mint.pubkey())
             .allowed_mint(allowed_mint_pda)
+            .vault(vault)
             .token_program(token_program)
             .bump(allowed_mint_bump)
             .instruction();

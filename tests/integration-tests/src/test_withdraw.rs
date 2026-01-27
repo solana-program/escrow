@@ -1,8 +1,9 @@
 use crate::{
-    fixtures::{WithdrawFixture, WithdrawSetup, DEFAULT_DEPOSIT_AMOUNT},
+    fixtures::{AllowMintSetup, WithdrawFixture, WithdrawSetup, DEFAULT_DEPOSIT_AMOUNT},
     utils::{
-        assert_custom_error, test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program,
-        test_wrong_owner, test_wrong_system_program, test_wrong_token_program, TestContext, TEST_HOOK_ALLOW_ID,
+        assert_custom_error, assert_escrow_error, test_missing_signer, test_not_writable, test_wrong_account,
+        test_wrong_current_program, test_wrong_owner, test_wrong_system_program, test_wrong_token_program, EscrowError,
+        TestContext, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
     },
 };
 use escrow_program_client::instructions::WithdrawBuilder;
@@ -96,7 +97,7 @@ fn test_withdraw_wrong_withdrawer() {
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&wrong_withdrawer]);
-    assert_custom_error(error, 5);
+    assert_escrow_error(error, EscrowError::InvalidWithdrawer);
 }
 
 // ============================================================================
@@ -111,7 +112,7 @@ fn test_withdraw_timelock_not_expired() {
 
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
-    assert_custom_error(error, 3);
+    assert_escrow_error(error, EscrowError::TimelockNotExpired);
 }
 
 #[test]
@@ -272,6 +273,59 @@ fn test_withdraw_with_hook_success() {
     assert_eq!(final_vault_balance, initial_vault_balance - DEFAULT_DEPOSIT_AMOUNT);
 
     assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed after withdraw");
+}
+
+#[test]
+fn test_withdraw_with_hook_rejected() {
+    let mut ctx = TestContext::new();
+
+    let mut setup = WithdrawSetup::new(&mut ctx);
+    setup.set_hook(&mut ctx, TEST_HOOK_DENY_ID);
+
+    let initial_vault_balance = ctx.get_token_balance(&setup.vault);
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+
+    assert_custom_error(error, TEST_HOOK_DENY_ERROR);
+
+    assert!(ctx.get_account(&setup.receipt_pda).is_some(), "Receipt should still exist after rejected withdraw");
+
+    let final_vault_balance = ctx.get_token_balance(&setup.vault);
+    assert_eq!(final_vault_balance, initial_vault_balance, "Vault balance should be unchanged");
+}
+
+// ============================================================================
+// Cross-Escrow Protection Tests
+// ============================================================================
+
+#[test]
+fn test_withdraw_receipt_for_different_escrow_fails() {
+    let mut ctx = TestContext::new();
+
+    let setup_a = WithdrawSetup::new(&mut ctx);
+
+    let setup_b =
+        AllowMintSetup::builder(&mut ctx).with_existing_mint(setup_a.mint.pubkey(), setup_a.token_program).build();
+    setup_b.build_instruction(&ctx).send_expect_success(&mut ctx);
+
+    let vault_b = ctx.create_token_account(&setup_b.escrow_pda, &setup_a.mint.pubkey());
+
+    let instruction = WithdrawBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .withdrawer(setup_a.depositor.pubkey())
+        .escrow(setup_b.escrow_pda)
+        .extensions(setup_b.escrow_extensions_pda)
+        .receipt(setup_a.receipt_pda)
+        .vault(vault_b)
+        .withdrawer_token_account(setup_a.depositor_token_account)
+        .mint(setup_a.mint.pubkey())
+        .token_program(setup_a.token_program)
+        .instruction();
+
+    let error = ctx.send_transaction_expect_error(instruction, &[&setup_a.depositor]);
+
+    assert_escrow_error(error, EscrowError::InvalidReceiptEscrow);
 }
 
 // ============================================================================
