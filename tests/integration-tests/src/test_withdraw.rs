@@ -229,6 +229,29 @@ fn test_withdraw_returns_rent_to_payer() {
     );
 }
 
+#[test]
+fn test_withdraw_returns_rent_to_custom_recipient() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    let custom_recipient = Pubkey::new_unique();
+    ctx.svm.set_account(custom_recipient, Account { lamports: 1_000_000, ..Account::default() }).unwrap();
+
+    let recipient_balance_before = ctx.get_account(&custom_recipient).unwrap().lamports;
+    let receipt_rent = ctx.get_account(&setup.receipt_pda).unwrap().lamports;
+
+    let test_ix = setup.build_instruction_with_rent_recipient(&ctx, custom_recipient);
+    test_ix.send_expect_success(&mut ctx);
+
+    let recipient_balance_after = ctx.get_account(&custom_recipient).unwrap().lamports;
+
+    assert_eq!(
+        recipient_balance_after,
+        recipient_balance_before + receipt_rent,
+        "Custom rent recipient should receive exact receipt rent"
+    );
+}
+
 // ============================================================================
 // Token 2022 Happy Path Tests
 // ============================================================================
