@@ -16,25 +16,25 @@ use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey
 #[test]
 fn test_withdraw_missing_withdrawer_signer() {
     let mut ctx = TestContext::new();
-    test_missing_signer::<WithdrawFixture>(&mut ctx, 1, 0);
+    test_missing_signer::<WithdrawFixture>(&mut ctx, 2, 0);
 }
 
 #[test]
 fn test_withdraw_receipt_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<WithdrawFixture>(&mut ctx, 4);
+    test_not_writable::<WithdrawFixture>(&mut ctx, 5);
 }
 
 #[test]
 fn test_withdraw_vault_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<WithdrawFixture>(&mut ctx, 5);
+    test_not_writable::<WithdrawFixture>(&mut ctx, 6);
 }
 
 #[test]
 fn test_withdraw_withdrawer_token_account_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<WithdrawFixture>(&mut ctx, 6);
+    test_not_writable::<WithdrawFixture>(&mut ctx, 7);
 }
 
 #[test]
@@ -52,25 +52,25 @@ fn test_withdraw_wrong_current_program() {
 #[test]
 fn test_withdraw_invalid_event_authority() {
     let mut ctx = TestContext::new();
-    test_wrong_account::<WithdrawFixture>(&mut ctx, 10, InstructionError::Custom(2));
+    test_wrong_account::<WithdrawFixture>(&mut ctx, 11, InstructionError::Custom(2));
 }
 
 #[test]
 fn test_withdraw_wrong_token_program() {
     let mut ctx = TestContext::new();
-    test_wrong_token_program::<WithdrawFixture>(&mut ctx, 8);
+    test_wrong_token_program::<WithdrawFixture>(&mut ctx, 9);
 }
 
 #[test]
 fn test_withdraw_wrong_escrow_owner() {
     let mut ctx = TestContext::new();
-    test_wrong_owner::<WithdrawFixture>(&mut ctx, 2);
+    test_wrong_owner::<WithdrawFixture>(&mut ctx, 3);
 }
 
 #[test]
 fn test_withdraw_wrong_receipt_owner() {
     let mut ctx = TestContext::new();
-    test_wrong_owner::<WithdrawFixture>(&mut ctx, 4);
+    test_wrong_owner::<WithdrawFixture>(&mut ctx, 5);
 }
 
 // ============================================================================
@@ -94,6 +94,8 @@ fn test_withdraw_wrong_withdrawer() {
         .vault(setup.vault)
         .withdrawer_token_account(wrong_withdrawer_token_account)
         .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&wrong_withdrawer]);
@@ -321,6 +323,7 @@ fn test_withdraw_receipt_for_different_escrow_fails() {
         .withdrawer_token_account(setup_a.depositor_token_account)
         .mint(setup_a.mint.pubkey())
         .token_program(setup_a.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&setup_a.depositor]);
@@ -354,6 +357,7 @@ fn test_withdraw_double_withdraw_fails() {
         .withdrawer_token_account(setup.depositor_token_account)
         .mint(setup.mint.pubkey())
         .token_program(setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&setup.depositor]);
@@ -398,6 +402,7 @@ fn test_withdraw_rejects_reactivated_account_wrong_owner() {
         .withdrawer_token_account(setup.depositor_token_account)
         .mint(setup.mint.pubkey())
         .token_program(setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&setup.depositor]);

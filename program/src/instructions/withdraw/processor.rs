@@ -72,8 +72,8 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
         })?;
     }
 
-    // Close receipt account and return lamports to payer
-    close_pda_account(ix.accounts.receipt, ix.accounts.payer)?;
+    // Close receipt account and return lamports to rent_recipient
+    close_pda_account(ix.accounts.receipt, ix.accounts.rent_recipient)?;
 
     // Invoke post-withdraw hook if configured (receipt is closed, don't pass it)
     if let Some(hook_data) = hook_data {

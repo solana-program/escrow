@@ -964,9 +964,15 @@
         "accounts": [
           {
             "isSigner": true,
-            "isWritable": true,
+            "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "payer"
+          },
+          {
+            "isSigner": false,
+            "isWritable": true,
+            "kind": "instructionAccountNode",
+            "name": "rentRecipient"
           },
           {
             "isSigner": true,
@@ -1180,10 +1186,16 @@
             "name": "admin"
           },
           {
+            "isSigner": true,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "payer"
+          },
+          {
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
-            "name": "payer"
+            "name": "rentRecipient"
           },
           {
             "isSigner": false,

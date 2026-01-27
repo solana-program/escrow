@@ -23,7 +23,7 @@ fn test_block_mint_missing_admin_signer() {
 #[test]
 fn test_block_mint_allowed_mint_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<BlockMintFixture>(&mut ctx, 4);
+    test_not_writable::<BlockMintFixture>(&mut ctx, 5);
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn test_block_mint_wrong_current_program() {
 #[test]
 fn test_block_mint_invalid_event_authority() {
     let mut ctx = TestContext::new();
-    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(6, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(7, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_escrow_error(error, EscrowError::InvalidEventAuthority);
 }
 
@@ -52,6 +52,8 @@ fn test_block_mint_wrong_admin() {
         .escrow(setup.escrow_pda)
         .mint(setup.mint_pubkey)
         .allowed_mint(setup.allowed_mint_pda)
+        .token_program(setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let test_ix = TestInstruction { instruction, signers: vec![wrong_admin], name: "BlockMint" };
@@ -63,28 +65,28 @@ fn test_block_mint_wrong_admin() {
 #[test]
 fn test_block_mint_wrong_escrow() {
     let mut ctx = TestContext::new();
-    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(2, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(3, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
 }
 
 #[test]
 fn test_block_mint_wrong_mint() {
     let mut ctx = TestContext::new();
-    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(3, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(4, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
 }
 
 #[test]
 fn test_block_mint_wrong_allowed_mint() {
     let mut ctx = TestContext::new();
-    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(4, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(5, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
 }
 
 #[test]
 fn test_block_mint_wrong_token_program() {
     let mut ctx = TestContext::new();
-    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(5, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = BlockMintFixture::build_valid(&mut ctx).with_account_at(6, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::IncorrectProgramId);
 }
 
@@ -104,6 +106,8 @@ fn test_block_mint_allowed_mint_escrow_mismatch() {
         .escrow(first_setup.escrow_pda)
         .mint(first_setup.mint_pubkey)
         .allowed_mint(second_setup.allowed_mint_pda)
+        .token_program(first_setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let test_ix = TestInstruction { instruction, signers: vec![first_setup.admin.insecure_clone()], name: "BlockMint" };
@@ -184,6 +188,8 @@ fn test_block_multiple_mints_same_escrow() {
         .escrow(first_setup.escrow_pda)
         .mint(first_setup.mint_pubkey)
         .allowed_mint(first_setup.allowed_mint_pda)
+        .token_program(first_setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let block_first_test_ix = TestInstruction {
@@ -202,6 +208,8 @@ fn test_block_multiple_mints_same_escrow() {
         .escrow(first_setup.escrow_pda)
         .mint(second_mint.pubkey())
         .allowed_mint(second_allowed_mint_pda)
+        .token_program(first_setup.token_program)
+        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let block_second_test_ix = TestInstruction {

@@ -28,8 +28,8 @@ pub fn process_block_mint(program_id: &Address, accounts: &[AccountView], instru
     pda_seeds.validate_pda(ix.accounts.allowed_mint, program_id, allowed_mint.bump)?;
     drop(allowed_mint_data);
 
-    // Close the AllowedMint account and return lamports to payer
-    close_pda_account(ix.accounts.allowed_mint, ix.accounts.payer)?;
+    // Close the AllowedMint account and return lamports to rent_recipient
+    close_pda_account(ix.accounts.allowed_mint, ix.accounts.rent_recipient)?;
 
     // Emit event via CPI
     let event = BlockMintEvent::new(*ix.accounts.escrow.address(), *ix.accounts.mint.address());

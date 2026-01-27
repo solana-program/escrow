@@ -66,6 +66,10 @@ impl WithdrawSetup {
     }
 
     pub fn build_instruction(&self, ctx: &TestContext) -> TestInstruction {
+        self.build_instruction_with_rent_recipient(ctx, ctx.payer.pubkey())
+    }
+
+    pub fn build_instruction_with_rent_recipient(&self, ctx: &TestContext, rent_recipient: Pubkey) -> TestInstruction {
         let mut builder = WithdrawBuilder::new();
         builder
             .payer(ctx.payer.pubkey())
@@ -76,7 +80,8 @@ impl WithdrawSetup {
             .vault(self.vault)
             .withdrawer_token_account(self.depositor_token_account)
             .mint(self.mint.pubkey())
-            .token_program(self.token_program);
+            .token_program(self.token_program)
+            .rent_recipient(rent_recipient);
 
         if let Some(hook_program) = self.hook_program {
             builder.add_remaining_account(AccountMeta::new_readonly(hook_program, false));
@@ -255,26 +260,26 @@ impl InstructionTestFixture for WithdrawFixture {
 
     /// Account indices that must be signers:
     /// 0: payer (handled by TestContext)
-    /// 1: withdrawer
+    /// 2: withdrawer
     fn required_signers() -> &'static [usize] {
-        &[0, 1]
+        &[0, 2]
     }
 
     /// Account indices that must be writable:
-    /// 0: payer (handled by TestContext)
-    /// 4: receipt
-    /// 5: vault
-    /// 6: withdrawer_token_account
+    /// 1: rent_recipient
+    /// 5: receipt
+    /// 6: vault
+    /// 7: withdrawer_token_account
     fn required_writable() -> &'static [usize] {
-        &[0, 4, 5, 6]
+        &[1, 5, 6, 7]
     }
 
     fn system_program_index() -> Option<usize> {
-        Some(9)
+        Some(10)
     }
 
     fn current_program_index() -> Option<usize> {
-        Some(11)
+        Some(12)
     }
 
     fn data_len() -> usize {

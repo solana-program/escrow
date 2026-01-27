@@ -80,7 +80,8 @@ pub enum EscrowProgramInstruction {
     UpdateAdmin {} = 4,
 
     /// Withdraw tokens from an escrow vault back to the original depositor.
-    #[codama(account(name = "payer", signer, writable))]
+    #[codama(account(name = "payer", signer))]
+    #[codama(account(name = "rent_recipient", writable))]
     #[codama(account(name = "withdrawer", signer))]
     #[codama(account(name = "escrow"))]
     #[codama(account(name = "extensions"))]
@@ -115,7 +116,8 @@ pub enum EscrowProgramInstruction {
 
     /// Block a token mint from deposits into an escrow.
     #[codama(account(name = "admin", signer))]
-    #[codama(account(name = "payer", writable))]
+    #[codama(account(name = "payer", signer))]
+    #[codama(account(name = "rent_recipient", writable))]
     #[codama(account(name = "escrow"))]
     #[codama(account(name = "mint"))]
     #[codama(account(name = "allowed_mint", writable))]
