@@ -53,6 +53,11 @@ integration-test *args:
 # Run all tests (use --with-cu to track compute units)
 test *args: build unit-test (integration-test args)
 
+# Build Client for Examples
+build-client:
+    pnpm run generate-clients
+    cd clients/typescript && pnpm build
+    cd examples/typescript/escrow-demo && pnpm install
 # ******************************************************************************
 # Deployment (requires txtx CLI: cargo install txtx)
 # ******************************************************************************
