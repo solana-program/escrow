@@ -14,8 +14,8 @@ Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg
 
 ## Deployments
 
-| Network | Program ID |
-|---------|------------|
+| Network                                                                                                   | Program ID                                     |
+| --------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | [Devnet](https://explorer.solana.com/address/Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg?cluster=devnet) | `Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg` |
 
 ## Overview
@@ -32,12 +32,12 @@ A configurable escrow program for Solana that enables receipt-based token deposi
 
 ## Account Types
 
-| Account | PDA Seeds | Description |
-|---------|-----------|-------------|
-| Escrow | `["escrow", escrow_seed]` | Main escrow config (admin, bump) |
-| Receipt | `["receipt", escrow, depositor, mint, receipt_seed]` | Deposit record with amount and timestamp |
-| AllowedMint | `["allowed_mint", escrow, mint]` | Marker that a mint is allowed |
-| EscrowExtensions | `["extensions", escrow]` | TLV-encoded extensions (timelock, hook, blocked extensions) |
+| Account          | PDA Seeds                                            | Description                                                 |
+| ---------------- | ---------------------------------------------------- | ----------------------------------------------------------- |
+| Escrow           | `["escrow", escrow_seed]`                            | Main escrow config (admin, bump)                            |
+| Receipt          | `["receipt", escrow, depositor, mint, receipt_seed]` | Deposit record with amount and timestamp                    |
+| AllowedMint      | `["allowed_mint", escrow, mint]`                     | Marker that a mint is allowed                               |
+| EscrowExtensions | `["extensions", escrow]`                             | TLV-encoded extensions (timelock, hook, blocked extensions) |
 
 ## Workflow
 
@@ -79,7 +79,6 @@ sequenceDiagram
     Program->>Accounts: close Receipt
 ```
 
-
 ## Documentation
 
 - [Program Overview](docs/PROGRAM_OVERVIEW.md) - Instructions, accounts, and technical reference
@@ -90,7 +89,7 @@ sequenceDiagram
 
 ### Prerequisites
 
-- Rust 
+- Rust
 - Node.js (see `.nvmrc`)
 - pnpm (see `package.json` `packageManager`)
 - Solana CLI

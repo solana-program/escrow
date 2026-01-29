@@ -38,6 +38,7 @@ Compute unit (CU) usage per instruction, measured via LiteSVM integration tests 
 - **Count**: Number of test invocations measured
 
 CU usage varies based on:
+
 - Account creation vs. existing accounts
 - Extension data presence and size
 - Hook program invocations
