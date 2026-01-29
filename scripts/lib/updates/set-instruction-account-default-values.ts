@@ -15,7 +15,7 @@ const ESCROW_PROGRAM_ID = 'Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg';
 
 const ATA_PROGRAM_ID = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';
-const EVENT_AUTHORITY_PDA = 'G9CCHrvvmKuoM9vqcEWCxmbFiyJqXTLJBJjpSFv5v3Fm';
+const EVENT_AUTHORITY_PDA = 'Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M';
 const TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA';
 
 function createAtaPdaValueNode(ownerAccount: string, mintAccount: string, tokenProgram: string) {
