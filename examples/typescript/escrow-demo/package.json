@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "tsx src/index.ts",
-    "start-validator": "solana-test-validator -r -q --bpf-program GokvZqD2yP696rzNBNbQvcZ4VsLW7jNvFXU1kW9m7k83 ../../../target/deploy/escrow_program.so >/tmp/escrow-validator.log 2>&1 &",
+    "start-validator": "solana-test-validator -r -q --bpf-program Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg ../../../target/deploy/escrow_program.so >/tmp/escrow-validator.log 2>&1 &",
     "kill-validator": "pgrep -f solana-test-validator >/dev/null && pkill -f solana-test-validator || true",
     "wait-validator": "i=0; until solana --url http://127.0.0.1:8899 cluster-version >/dev/null 2>&1; do i=$((i+1)); [ $i -ge 30 ] && echo \"validator not ready\" && exit 1; sleep 1; done",
     "start-with-validator": "pnpm kill-validator && pnpm start-validator && pnpm wait-validator && pnpm start && pnpm kill-validator",

@@ -1388,7 +1388,7 @@
     "kind": "programNode",
     "name": "escrowProgram",
     "pdas": [],
-    "publicKey": "GokvZqD2yP696rzNBNbQvcZ4VsLW7jNvFXU1kW9m7k83",
+    "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg",
     "version": "0.0.1"
   },
   "standard": "codama",

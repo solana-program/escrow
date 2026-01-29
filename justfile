@@ -68,15 +68,15 @@ check-txtx:
 
 # Deploy to devnet (supervised mode with web UI)
 deploy-devnet: check-txtx
-    txtx run deploy -e devnet
+    txtx run deploy --env devnet
 
 # Deploy to devnet (unsupervised/CI mode)
 deploy-devnet-ci: check-txtx
-    txtx run deploy -e devnet -u
+    txtx run deploy --env devnet -u
 
 # Deploy to localnet (for testing with local validator)
 deploy-localnet: check-txtx
-    txtx run deploy -e localnet
+    txtx run deploy --env localnet
 
 # ******************************************************************************
 # Release

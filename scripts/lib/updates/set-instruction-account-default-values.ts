@@ -11,7 +11,7 @@ import {
     setInstructionAccountDefaultValuesVisitor,
 } from 'codama';
 
-const ESCROW_PROGRAM_ID = 'GokvZqD2yP696rzNBNbQvcZ4VsLW7jNvFXU1kW9m7k83';
+const ESCROW_PROGRAM_ID = 'Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg';
 
 const ATA_PROGRAM_ID = 'ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
 const SYSTEM_PROGRAM_ID = '11111111111111111111111111111111';

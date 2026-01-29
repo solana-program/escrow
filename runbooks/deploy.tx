@@ -7,7 +7,7 @@ addon "svm" {
 }
 
 signer "deployer" "svm::secret_key" {
-  secret_key = env.DEPLOYER_SECRET_KEY
+  keypair_json = input.deployer_keypair_json
 }
 
 action "deploy_escrow" "svm::deploy_program" {

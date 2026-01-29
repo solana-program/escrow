@@ -19,9 +19,13 @@
 
 # Solana Test Validator
 **/test-ledger
+.runbook-logs/*
 
 # Local
 .local/
 
 # CU tracking
 .cus/
+
+# Keyfiles
+.keypairs/
