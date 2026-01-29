@@ -1,4 +1,6 @@
-# Solana Escrow Program
+# Escrow Program
+
+> **⚠️ SECURITY NOTICE**: This program has not been audited. Use at your own risk. Not recommended for production use with real funds without a thorough security review. The authors and contributors are not responsible for any loss of funds or damages resulting from the use of this program.
 
 <!-- CU_SUMMARY_START -->
 
@@ -31,3 +33,9 @@ The following enhancements could be considered for future iterations of the prog
 5. **Receipt Seed Space Optimization** - The current `receipt_seed` uses a 32-byte `Address` type. Two alternatives could save space:
     - **Use `u8` counter**: Change to a simple counter (0-255), saving 31 bytes per receipt. Limits to 256 receipts per depositor/escrow/mint combination, which is acceptable for most use cases.
     - **Single receipt with `deposit_additional` instruction**: Allow users to add to an existing receipt rather than creating new ones. This would require handling complexities around `deposited_at` timestamps (e.g., weighted average, use latest, or track per-deposit).
+
+---
+
+Built and maintained by the Solana Foundation.
+
+Licensed under MIT. See [LICENSE](LICENSE) for details.
