@@ -73,8 +73,8 @@ sequenceDiagram
     Note over Depositor,Accounts: timelock passes
 
     Depositor->>Program: Withdraw
-    Accounts->>Program: verify Receipt
-    Accounts,Program: verify Hooks
+    Program->>Accounts: verify Receipt
+    Program->>Accounts: verify Hooks
     Program->>Depositor: transfer tokens
     Program->>Accounts: close Receipt
 ```
