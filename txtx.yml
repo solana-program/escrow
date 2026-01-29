@@ -10,9 +10,12 @@ environments:
   localnet:
     svm_network_id: localnet
     svm_api_url: http://127.0.0.1:8899
+    deployer_keypair_json: ~/.config/solana/id.json
   devnet:
     svm_network_id: devnet
-    svm_api_url: ${DEVNET_RPC_URL}
+    svm_api_url: https://api.devnet.solana.com
+    deployer_keypair_json: .keypairs/escrow-devnet-deployer.json
   mainnet:
     svm_network_id: mainnet-beta
-    svm_api_url: ${MAINNET_RPC_URL}
+    svm_api_url: https://api.mainnet-beta.solana.com
+    deployer_keypair_json: .keypairs/escrow-mainnet-deployer.json
