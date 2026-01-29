@@ -32,11 +32,12 @@ if [ -f .cus/results.txt ]; then
 fi
 echo "╚═══════════════════════════════════════════════════════════════════════════════════╝"
 
-# Update README with CU summary
+# Generate the new CU section
 {
 	echo "<!-- CU_SUMMARY_START -->"
+	echo ""
 	echo "| Instruction | Best | Avg | Worst | Count |"
-	echo "|-------------|------|-----|-------|-------|"
+	echo "| ----------- | ---- | --- | ----- | ----- |"
 	awk -F',' '
 	{
 		name = $1
@@ -52,21 +53,31 @@ echo "╚═══════════════════════�
 			printf "| %s | %d | %d | %d | %d |\n", name, min[name], avg, max[name], count[name]
 		}
 	}' .cus/results.txt | sort
+	echo ""
 	echo "<!-- CU_SUMMARY_END -->"
-} > .cus/readme_section.tmp
+} > .cus/cu_section.tmp
 
-# Replace section in README
+# Remove old CU section from docs/CU_BENCHMARKS.md (everything between markers, inclusive)
 awk '
-/<!-- CU_SUMMARY_START -->/ { skip = 1 }
+/<!-- CU_SUMMARY_START -->/ { skip = 1; next }
 /<!-- CU_SUMMARY_END -->/ { skip = 0; next }
 !skip { print }
-' README.md > .cus/readme_without_cu.tmp
+' docs/CU_BENCHMARKS.md > .cus/benchmarks_without_cu.tmp
 
-# Insert new section after first line (title)
-head -1 .cus/readme_without_cu.tmp > README.md
-cat .cus/readme_section.tmp >> README.md
-tail -n +2 .cus/readme_without_cu.tmp >> README.md
+# Find line number containing "CU_TRACKING" and insert new section after it
+line_num=$(grep -n "CU_TRACKING" .cus/benchmarks_without_cu.tmp | head -1 | cut -d: -f1)
 
-rm -f .cus/readme_section.tmp .cus/readme_without_cu.tmp
+if [ -n "$line_num" ]; then
+	head -n "$line_num" .cus/benchmarks_without_cu.tmp > docs/CU_BENCHMARKS.md
+	echo "" >> docs/CU_BENCHMARKS.md
+	cat .cus/cu_section.tmp >> docs/CU_BENCHMARKS.md
+	tail -n +"$((line_num + 1))" .cus/benchmarks_without_cu.tmp >> docs/CU_BENCHMARKS.md
+else
+	echo "Warning: Could not find CU_TRACKING marker, appending to end"
+	cat .cus/benchmarks_without_cu.tmp > docs/CU_BENCHMARKS.md
+	cat .cus/cu_section.tmp >> docs/CU_BENCHMARKS.md
+fi
+
+rm -f .cus/cu_section.tmp .cus/benchmarks_without_cu.tmp
 echo ""
-echo "README.md updated with CU summary."
+echo "docs/CU_BENCHMARKS.md updated with CU summary."
