@@ -75,16 +75,15 @@ jobs:
 
       - uses: actions/cache@v5
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ~/.cargo/bin
-          key: cargo-txtx-${{ runner.os }}
+          path: ~/.txtx
+          key: txtx-${{ runner.os }}
 
       - name: Install txtx
         run: |
+          echo "$HOME/.txtx/bin" >> $GITHUB_PATH
+          export PATH="$HOME/.txtx/bin:$PATH"
           if ! command -v txtx &> /dev/null; then
-            cargo install txtx
+            curl -sL https://install.txtx.sh/ | bash
           fi
 
       - name: Deploy to devnet

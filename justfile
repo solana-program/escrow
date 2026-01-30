@@ -59,12 +59,12 @@ build-client:
     cd clients/typescript && pnpm build
     cd examples/typescript/escrow-demo && pnpm install
 # ******************************************************************************
-# Deployment (requires txtx CLI: cargo install txtx)
+# Deployment (requires txtx CLI: https://docs.txtx.sh/install)
 # ******************************************************************************
 
 [private]
 check-txtx:
-    @command -v txtx >/dev/null 2>&1 || { echo "Error: txtx not found. Install with: cargo install txtx"; exit 1; }
+    @command -v txtx >/dev/null 2>&1 || { echo "Error: txtx not found. Install from: https://docs.txtx.sh/install"; exit 1; }
 
 # Deploy to devnet (supervised mode with web UI)
 deploy-devnet: check-txtx
