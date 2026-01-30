@@ -48,13 +48,3 @@ void escrowCodama.accept(
 
 // Restore configuration files after generation
 configPreserver.restore();
-
-// Post-process generated Address type to use solana_address::Address instead of Pubkey
-const addressRsPath = path.join(rustClientsDir, 'src', 'generated', 'types', 'address.rs');
-if (fs.existsSync(addressRsPath)) {
-    let content = fs.readFileSync(addressRsPath, 'utf-8');
-    // Replace Pubkey with solana_address::Address
-    content = content.replace(/use solana_pubkey::Pubkey;/, 'use solana_address::Address as SolanaAddress;');
-    content = content.replace(/pub type Address = Pubkey;/, 'pub type Address = SolanaAddress;');
-    fs.writeFileSync(addressRsPath, content);
-}
