@@ -30,3 +30,15 @@ pub mod state;
 pub mod entrypoint;
 
 declare_id!("Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg");
+
+#[cfg(not(feature = "no-entrypoint"))]
+use solana_security_txt::security_txt;
+
+#[cfg(not(feature = "no-entrypoint"))]
+security_txt! {
+    name: "Escrow Program",
+    project_url: "https://github.com/solana-program/escrow",
+    contacts: "link:https://github.com/solana-program/escrow/security/advisories/new",
+    policy: "https://github.com/solana-program/escrow/security/policy",
+    source_code: "https://github.com/solana-program/escrow"
+}

@@ -79,6 +79,45 @@ deploy-localnet: check-txtx
     txtx run deploy --env localnet
 
 # ******************************************************************************
+# IDL Deployment (uses Program Metadata Program)
+# ******************************************************************************
+
+[private]
+check-program-metadata:
+    @command -v program-metadata >/dev/null 2>&1 || { echo "Error: program-metadata not installed. See https://github.com/solana-program/program-metadata"; exit 1; }
+
+# Deploy IDL to devnet
+deploy-idl-devnet: check-program-metadata
+    program-metadata write idl Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg idl/escrow_program.json \
+        --keypair .keypairs/escrow-devnet-deployer.json \
+        --rpc https://api.devnet.solana.com
+
+# Deploy IDL to mainnet
+deploy-idl-mainnet: check-program-metadata
+    program-metadata write idl Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg idl/escrow_program.json \
+        --keypair .keypairs/escrow-mainnet-deployer.json \
+        --rpc https://api.mainnet-beta.solana.com
+
+# ******************************************************************************
+# Build Verification (uses solana-verify CLI)
+# ******************************************************************************
+
+[private]
+check-solana-verify:
+    @command -v solana-verify >/dev/null 2>&1 || { echo "Error: solana-verify not installed. Run: cargo install solana-verify"; exit 1; }
+
+# Verify mainnet deployment against repo (remote build via OtterSec)
+# Note: Remote verification (--remote) only works on mainnet
+verify-mainnet: check-solana-verify
+    solana-verify verify-from-repo \
+        https://github.com/solana-program/escrow \
+        --program-id Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg \
+        --library-name escrow_program \
+        --mount-path program \
+        --remote \
+        -um
+
+# ******************************************************************************
 # Release
 # ******************************************************************************
 
