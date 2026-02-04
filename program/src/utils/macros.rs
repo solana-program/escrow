@@ -1,4 +1,4 @@
-/// Validate the length of the data.
+/// Validate the length of instruction data.
 ///
 /// # Arguments
 /// * `data` - The data to validate.
@@ -11,6 +11,23 @@ macro_rules! require_len {
     ($data:expr, $len:expr) => {
         if $data.len() < $len {
             return Err(ProgramError::InvalidInstructionData);
+        }
+    };
+}
+
+/// Validate the length of account data.
+///
+/// # Arguments
+/// * `data` - The account data to validate.
+/// * `len` - The expected length.
+///
+/// # Returns
+/// * `Result<(), ProgramError>` - The result of the operation
+#[macro_export]
+macro_rules! require_account_len {
+    ($data:expr, $len:expr) => {
+        if $data.len() < $len {
+            return Err(ProgramError::InvalidAccountData);
         }
     };
 }

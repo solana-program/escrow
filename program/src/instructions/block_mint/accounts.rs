@@ -45,23 +45,29 @@ impl<'a> TryFrom<&'a [AccountView]> for BlockMintAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        // 1. Validate signers
         verify_signer(admin, false)?;
         verify_signer(payer, false)?;
 
+        // 2. Validate writable
         verify_writable(rent_recipient, true)?;
         verify_writable(allowed_mint, true)?;
 
+        // 3. Validate readonly
         verify_readonly(escrow)?;
         verify_readonly(mint)?;
 
+        // 4. Validate program IDs
+        verify_token_program(token_program)?;
+        verify_current_program(escrow_program)?;
+        verify_event_authority(event_authority)?;
+
+        // 5. Validate accounts owned by current program
         verify_current_program_account(escrow)?;
         verify_current_program_account(allowed_mint)?;
 
-        verify_token_program(token_program)?;
+        // 6. Validate token account ownership
         verify_token_program_account(mint)?;
-
-        verify_current_program(escrow_program)?;
-        verify_event_authority(event_authority)?;
 
         Ok(Self {
             admin,
