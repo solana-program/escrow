@@ -59,29 +59,35 @@ impl<'a> TryFrom<&'a [AccountView]> for DepositAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        // 1. Validate signers
         verify_signer(payer, true)?;
         verify_signer(depositor, false)?;
         verify_signer(receipt_seed, false)?;
 
+        // 2. Validate writable
         verify_writable(receipt, true)?;
         verify_writable(vault, true)?;
         verify_writable(depositor_token_account, true)?;
 
+        // 3. Validate readonly
         verify_readonly(escrow)?;
         verify_readonly(allowed_mint)?;
         verify_readonly(mint)?;
         verify_readonly(extensions)?;
 
-        verify_current_program_account(escrow)?;
-        verify_current_program_account(allowed_mint)?;
-
+        // 4. Validate program IDs
         verify_token_program(token_program)?;
-        validate_associated_token_account(vault, escrow.address(), mint, token_program)?;
-        validate_associated_token_account(depositor_token_account, depositor.address(), mint, token_program)?;
-
         verify_system_program(system_program)?;
         verify_current_program(escrow_program)?;
         verify_event_authority(event_authority)?;
+
+        // 5. Validate accounts owned by current program
+        verify_current_program_account(escrow)?;
+        verify_current_program_account(allowed_mint)?;
+
+        // 6. Validate ATA
+        validate_associated_token_account(vault, escrow.address(), mint, token_program)?;
+        validate_associated_token_account(depositor_token_account, depositor.address(), mint, token_program)?;
 
         Ok(Self {
             payer,

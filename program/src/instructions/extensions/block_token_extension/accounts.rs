@@ -37,18 +37,22 @@ impl<'a> TryFrom<&'a [AccountView]> for BlockTokenExtensionAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        // 1. Validate signers
         verify_signer(payer, true)?;
         verify_signer(admin, false)?;
 
+        // 2. Validate writable
         verify_writable(extensions, true)?;
 
+        // 3. Validate readonly
         verify_readonly(escrow)?;
 
+        // 4. Validate program IDs
         verify_system_program(system_program)?;
         verify_current_program(escrow_program)?;
-
         verify_event_authority(event_authority)?;
 
+        // 5. Validate accounts owned by current program
         verify_current_program_account(escrow)?;
 
         Ok(Self { payer, admin, escrow, extensions, system_program, event_authority, escrow_program })

@@ -57,28 +57,34 @@ impl<'a> TryFrom<&'a [AccountView]> for WithdrawAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        // 1. Validate signers
         verify_signer(payer, false)?;
         verify_signer(withdrawer, false)?;
 
+        // 2. Validate writable
         verify_writable(rent_recipient, true)?;
         verify_writable(receipt, true)?;
         verify_writable(vault, true)?;
         verify_writable(withdrawer_token_account, true)?;
 
+        // 3. Validate readonly
         verify_readonly(escrow)?;
         verify_readonly(extensions)?;
         verify_readonly(mint)?;
 
-        verify_current_program_account(escrow)?;
-        verify_current_program_account(receipt)?;
-
+        // 4. Validate program IDs
         verify_token_program(token_program)?;
-        validate_associated_token_account(vault, escrow.address(), mint, token_program)?;
-        validate_associated_token_account(withdrawer_token_account, withdrawer.address(), mint, token_program)?;
-
         verify_system_program(system_program)?;
         verify_current_program(escrow_program)?;
         verify_event_authority(event_authority)?;
+
+        // 5. Validate accounts owned by current program
+        verify_current_program_account(escrow)?;
+        verify_current_program_account(receipt)?;
+
+        // 6. Validate ATA
+        validate_associated_token_account(vault, escrow.address(), mint, token_program)?;
+        validate_associated_token_account(withdrawer_token_account, withdrawer.address(), mint, token_program)?;
 
         Ok(Self {
             payer,

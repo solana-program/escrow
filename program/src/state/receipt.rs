@@ -3,11 +3,11 @@ use alloc::vec::Vec;
 use codama::CodamaAccount;
 use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address};
 
-use crate::assert_no_padding;
 use crate::errors::EscrowProgramError::{InvalidReceiptEscrow, InvalidWithdrawer};
 use crate::traits::{
     AccountParse, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaSeeds, Versioned,
 };
+use crate::{assert_no_padding, require_account_len, validate_discriminator};
 
 /// Receipt account state
 ///
@@ -46,13 +46,8 @@ impl AccountSize for Receipt {
 
 impl AccountParse for Receipt {
     fn parse_from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
-        if data.len() < Self::LEN {
-            return Err(ProgramError::InvalidAccountData);
-        }
-
-        if data[0] != Self::DISCRIMINATOR {
-            return Err(ProgramError::InvalidAccountData);
-        }
+        require_account_len!(data, Self::LEN);
+        validate_discriminator!(data, Self::DISCRIMINATOR);
 
         // Skip discriminator (byte 0) and version (byte 1)
         let data = &data[2..];

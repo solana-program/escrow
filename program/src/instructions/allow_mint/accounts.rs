@@ -53,27 +53,34 @@ impl<'a> TryFrom<&'a [AccountView]> for AllowMintAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        // 1. Validate signers
         verify_signer(payer, true)?;
         verify_signer(admin, false)?;
 
+        // 2. Validate writable
         verify_writable(allowed_mint, true)?;
         verify_writable(vault, true)?;
 
+        // 3. Validate readonly
         verify_readonly(escrow)?;
         verify_readonly(escrow_extensions)?;
         verify_readonly(mint)?;
 
-        verify_current_program_account(escrow)?;
-
+        // 4. Validate program IDs
         verify_token_program(token_program)?;
-        verify_token_program_account(mint)?;
-
         verify_associated_token_program(associated_token_program)?;
-        validate_associated_token_account_address(vault, escrow.address(), mint, token_program)?;
-
         verify_system_program(system_program)?;
         verify_current_program(escrow_program)?;
         verify_event_authority(event_authority)?;
+
+        // 5. Validate accounts owned by current program
+        verify_current_program_account(escrow)?;
+
+        // 6. Validate token account ownership
+        verify_token_program_account(mint)?;
+
+        // 7. Validate ATA
+        validate_associated_token_account_address(vault, escrow.address(), mint, token_program)?;
 
         Ok(Self {
             payer,

@@ -32,15 +32,18 @@ impl<'a> TryFrom<&'a [AccountView]> for UpdateAdminAccounts<'a> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        // 1. Validate signers
         verify_signer(admin, false)?;
         verify_signer(new_admin, false)?;
 
+        // 2. Validate writable
         verify_writable(escrow, true)?;
 
+        // 3. Validate program IDs
         verify_current_program(escrow_program)?;
-
         verify_event_authority(event_authority)?;
 
+        // 4. Validate accounts owned by current program
         verify_current_program_account(escrow)?;
 
         Ok(Self { admin, new_admin, escrow, event_authority, escrow_program })
