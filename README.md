@@ -20,7 +20,7 @@ Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg
 
 ## Overview
 
-A configurable escrow program for Solana that enables receipt-based token deposits and withdrawals. Admins create escrows and allowlist specific mints, while depositors receive receiptse that can be redeemed after optional lock mechanisms (e.g., timelocks, hooks, etc.) are satisfied.
+A configurable escrow program for Solana that enables receipt-based token deposits and withdrawals. Admins create escrows and allowlist specific mints, while depositors receive receipts that can be redeemed after optional lock mechanisms (e.g., timelocks, hooks, etc.) are satisfied.
 
 ## Key Features
 
