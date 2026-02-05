@@ -2,9 +2,11 @@ use crate::{
     fixtures::{CreateEscrowFixture, UpdateAdminFixture},
     utils::{
         assert_escrow_account, assert_instruction_error, find_escrow_pda, test_missing_signer, test_not_writable,
-        test_wrong_account, test_wrong_current_program, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
+        test_wrong_account, test_wrong_current_program, InstructionTestFixture, TestContext, TestInstruction,
+        RANDOM_PUBKEY,
     },
 };
+use escrow_program_client::instructions::UpdateAdminBuilder;
 use solana_sdk::{
     instruction::InstructionError,
     signature::{Keypair, Signer},
@@ -18,6 +20,13 @@ use solana_sdk::{
 fn test_update_admin_missing_admin_signer() {
     let mut ctx = TestContext::new();
     test_missing_signer::<UpdateAdminFixture>(&mut ctx, 0, 0);
+}
+
+#[test]
+fn test_update_admin_missing_new_admin_signer() {
+    let mut ctx = TestContext::new();
+    // new_admin is at account index 1, signer vec index 1
+    test_missing_signer::<UpdateAdminFixture>(&mut ctx, 1, 1);
 }
 
 #[test]
@@ -149,4 +158,33 @@ fn test_update_admin_old_admin_cannot_update() {
     let bad_update_ix = UpdateAdminFixture::build_with_escrow(&mut ctx, escrow_pda, original_admin, another_admin);
     let error = bad_update_ix.send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::Custom(1)); // InvalidAdmin
+}
+
+// ============================================================================
+// Additional Tests
+// ============================================================================
+
+#[test]
+fn test_update_admin_idempotent() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    let bump = escrow_ix.instruction.data[1];
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+
+    // Update admin to the same admin (idempotent operation)
+    let same_admin = admin.insecure_clone();
+    let instruction =
+        UpdateAdminBuilder::new().admin(admin.pubkey()).new_admin(same_admin.pubkey()).escrow(escrow_pda).instruction();
+
+    let test_ix =
+        TestInstruction { instruction, signers: vec![admin.insecure_clone(), same_admin], name: "UpdateAdmin" };
+    test_ix.send_expect_success(&mut ctx);
+
+    // Verify admin is still the same
+    assert_escrow_account(&ctx, &escrow_pda, &admin.pubkey(), bump, &escrow_seed);
 }

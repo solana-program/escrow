@@ -69,10 +69,10 @@ impl WithdrawSetup {
         self.build_instruction_with_rent_recipient(ctx, ctx.payer.pubkey())
     }
 
-    pub fn build_instruction_with_rent_recipient(&self, ctx: &TestContext, rent_recipient: Pubkey) -> TestInstruction {
+    pub fn build_instruction_with_rent_recipient(&self, _ctx: &TestContext, rent_recipient: Pubkey) -> TestInstruction {
         let mut builder = WithdrawBuilder::new();
         builder
-            .payer(ctx.payer.pubkey())
+            .rent_recipient(rent_recipient)
             .withdrawer(self.depositor.pubkey())
             .escrow(self.escrow_pda)
             .extensions(self.extensions_pda)
@@ -80,8 +80,7 @@ impl WithdrawSetup {
             .vault(self.vault)
             .withdrawer_token_account(self.depositor_token_account)
             .mint(self.mint.pubkey())
-            .token_program(self.token_program)
-            .rent_recipient(rent_recipient);
+            .token_program(self.token_program);
 
         if let Some(hook_program) = self.hook_program {
             builder.add_remaining_account(AccountMeta::new_readonly(hook_program, false));
@@ -259,27 +258,26 @@ impl InstructionTestFixture for WithdrawFixture {
     }
 
     /// Account indices that must be signers:
-    /// 0: payer (handled by TestContext)
-    /// 2: withdrawer
+    /// 1: withdrawer
     fn required_signers() -> &'static [usize] {
-        &[0, 2]
+        &[1]
     }
 
     /// Account indices that must be writable:
-    /// 1: rent_recipient
-    /// 5: receipt
-    /// 6: vault
-    /// 7: withdrawer_token_account
+    /// 0: rent_recipient
+    /// 4: receipt
+    /// 5: vault
+    /// 6: withdrawer_token_account
     fn required_writable() -> &'static [usize] {
-        &[1, 5, 6, 7]
+        &[0, 4, 5, 6]
     }
 
     fn system_program_index() -> Option<usize> {
-        Some(10)
+        Some(9)
     }
 
     fn current_program_index() -> Option<usize> {
-        Some(12)
+        Some(11)
     }
 
     fn data_len() -> usize {

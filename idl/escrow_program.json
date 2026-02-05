@@ -963,12 +963,6 @@
       {
         "accounts": [
           {
-            "isSigner": true,
-            "isWritable": false,
-            "kind": "instructionAccountNode",
-            "name": "payer"
-          },
-          {
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
@@ -1184,12 +1178,6 @@
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
-          },
-          {
-            "isSigner": true,
-            "isWritable": false,
-            "kind": "instructionAccountNode",
-            "name": "payer"
           },
           {
             "isSigner": false,
