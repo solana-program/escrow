@@ -220,4 +220,36 @@ impl TestContext {
             )
             .unwrap();
     }
+
+    /// Create a token account at a specific address (for wrong ATA tests).
+    /// This allows testing ATA validation by creating a valid token account
+    /// at an address that doesn't match the expected ATA derivation.
+    pub fn create_token_account_at_address(&mut self, address: &Pubkey, owner: &Pubkey, mint: &Pubkey, amount: u64) {
+        let token_account = TokenAccount {
+            mint: *mint,
+            owner: *owner,
+            amount,
+            delegate: COption::None,
+            state: AccountState::Initialized,
+            is_native: COption::None,
+            delegated_amount: 0,
+            close_authority: COption::None,
+        };
+
+        let mut data = vec![0u8; TokenAccount::LEN];
+        token_account.pack_into_slice(&mut data);
+
+        self.svm
+            .set_account(
+                *address,
+                Account {
+                    lamports: self.svm.minimum_balance_for_rent_exemption(TokenAccount::LEN),
+                    data,
+                    owner: TOKEN_PROGRAM_ID,
+                    executable: false,
+                    rent_epoch: 0,
+                },
+            )
+            .unwrap();
+    }
 }

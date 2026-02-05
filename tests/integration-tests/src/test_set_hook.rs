@@ -7,6 +7,8 @@ use crate::{
         InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
+use escrow_program_client::instructions::SetHookBuilder;
+use solana_address::Address;
 use solana_sdk::{instruction::InstructionError, pubkey::Pubkey, signature::Signer};
 
 // ============================================================================
@@ -128,6 +130,38 @@ fn test_set_hook_success() {
     let extensions_bump = test_ix.instruction.data[1];
     let hook_program = Pubkey::new_from_array(test_ix.instruction.data[2..34].try_into().unwrap());
 
+    test_ix.send_expect_success(&mut ctx);
+
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_hook_extension(&ctx, &extensions_pda, &hook_program);
+}
+
+#[test]
+fn test_set_hook_hook_program_zero_address() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
+
+    // Set hook to system program (zero address = disabled)
+    let hook_program = Pubkey::default();
+    let instruction = SetHookBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .admin(admin.pubkey())
+        .escrow(escrow_pda)
+        .extensions(extensions_pda)
+        .extensions_bump(extensions_bump)
+        .hook_program(Address::from(hook_program.to_bytes()))
+        .instruction();
+
+    let test_ix = crate::utils::TestInstruction { instruction, signers: vec![admin], name: "SetHook" };
+
+    // Setting hook to zero address should succeed (disables hook)
     test_ix.send_expect_success(&mut ctx);
 
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);

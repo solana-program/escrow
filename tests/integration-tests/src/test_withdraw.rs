@@ -1,13 +1,19 @@
 use crate::{
     fixtures::{AllowMintSetup, WithdrawFixture, WithdrawSetup, DEFAULT_DEPOSIT_AMOUNT},
     utils::{
-        assert_custom_error, assert_escrow_error, test_missing_signer, test_not_writable, test_wrong_account,
-        test_wrong_current_program, test_wrong_owner, test_wrong_system_program, test_wrong_token_program, EscrowError,
-        TestContext, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
+        assert_custom_error, assert_escrow_error, assert_instruction_error, test_missing_signer, test_not_writable,
+        test_wrong_account, test_wrong_current_program, test_wrong_owner, test_wrong_system_program,
+        test_wrong_token_program, EscrowError, TestContext, TestInstruction, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR,
+        TEST_HOOK_DENY_ID,
     },
 };
 use escrow_program_client::instructions::WithdrawBuilder;
-use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey, signature::Signer};
+use solana_sdk::{
+    account::Account,
+    instruction::{AccountMeta, InstructionError},
+    pubkey::Pubkey,
+    signature::Signer,
+};
 
 // ============================================================================
 // Error Tests - Using Generic Test Helpers
@@ -16,25 +22,25 @@ use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey
 #[test]
 fn test_withdraw_missing_withdrawer_signer() {
     let mut ctx = TestContext::new();
-    test_missing_signer::<WithdrawFixture>(&mut ctx, 2, 0);
+    test_missing_signer::<WithdrawFixture>(&mut ctx, 1, 0);
 }
 
 #[test]
 fn test_withdraw_receipt_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<WithdrawFixture>(&mut ctx, 5);
+    test_not_writable::<WithdrawFixture>(&mut ctx, 4);
 }
 
 #[test]
 fn test_withdraw_vault_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<WithdrawFixture>(&mut ctx, 6);
+    test_not_writable::<WithdrawFixture>(&mut ctx, 5);
 }
 
 #[test]
 fn test_withdraw_withdrawer_token_account_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<WithdrawFixture>(&mut ctx, 7);
+    test_not_writable::<WithdrawFixture>(&mut ctx, 6);
 }
 
 #[test]
@@ -52,25 +58,107 @@ fn test_withdraw_wrong_current_program() {
 #[test]
 fn test_withdraw_invalid_event_authority() {
     let mut ctx = TestContext::new();
-    test_wrong_account::<WithdrawFixture>(&mut ctx, 11, InstructionError::Custom(2));
+    test_wrong_account::<WithdrawFixture>(&mut ctx, 10, InstructionError::Custom(2));
 }
 
 #[test]
 fn test_withdraw_wrong_token_program() {
     let mut ctx = TestContext::new();
-    test_wrong_token_program::<WithdrawFixture>(&mut ctx, 9);
+    test_wrong_token_program::<WithdrawFixture>(&mut ctx, 8);
 }
 
 #[test]
 fn test_withdraw_wrong_escrow_owner() {
     let mut ctx = TestContext::new();
-    test_wrong_owner::<WithdrawFixture>(&mut ctx, 3);
+    test_wrong_owner::<WithdrawFixture>(&mut ctx, 2);
 }
 
 #[test]
 fn test_withdraw_wrong_receipt_owner() {
     let mut ctx = TestContext::new();
-    test_wrong_owner::<WithdrawFixture>(&mut ctx, 5);
+    test_wrong_owner::<WithdrawFixture>(&mut ctx, 4);
+}
+
+#[test]
+fn test_withdraw_wrong_extensions_account() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    // Use a wrong extensions PDA (random pubkey)
+    let wrong_extensions = Pubkey::new_unique();
+
+    let instruction = WithdrawBuilder::new()
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(wrong_extensions) // Wrong extensions PDA
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .withdrawer_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .instruction();
+
+    let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    // Wrong extensions PDA should fail with InvalidSeeds during PDA validation
+    assert_instruction_error(error, InstructionError::InvalidSeeds);
+}
+
+#[test]
+fn test_withdraw_wrong_vault_ata() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    // Create a token account at a wrong address (not the escrow's ATA)
+    let wrong_vault = Pubkey::new_unique();
+    ctx.create_token_account_at_address(&wrong_vault, &setup.escrow_pda, &setup.mint.pubkey(), DEFAULT_DEPOSIT_AMOUNT);
+
+    let instruction = WithdrawBuilder::new()
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(wrong_vault) // Wrong vault address
+        .withdrawer_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .instruction();
+
+    let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountData);
+}
+
+#[test]
+fn test_withdraw_wrong_withdrawer_ata() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    // Create a token account owned by a different owner at a random address
+    let wrong_owner = Pubkey::new_unique();
+    let wrong_token_account = Pubkey::new_unique();
+    ctx.create_token_account_at_address(&wrong_token_account, &wrong_owner, &setup.mint.pubkey(), 0);
+
+    let instruction = WithdrawBuilder::new()
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .withdrawer_token_account(wrong_token_account) // Wrong withdrawer token account
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .instruction();
+
+    let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountData);
 }
 
 // ============================================================================
@@ -86,7 +174,7 @@ fn test_withdraw_wrong_withdrawer() {
     let wrong_withdrawer_token_account = ctx.create_token_account(&wrong_withdrawer.pubkey(), &setup.mint.pubkey());
 
     let instruction = WithdrawBuilder::new()
-        .payer(ctx.payer.pubkey())
+        .rent_recipient(ctx.payer.pubkey())
         .withdrawer(wrong_withdrawer.pubkey())
         .escrow(setup.escrow_pda)
         .extensions(setup.extensions_pda)
@@ -95,7 +183,6 @@ fn test_withdraw_wrong_withdrawer() {
         .withdrawer_token_account(wrong_withdrawer_token_account)
         .mint(setup.mint.pubkey())
         .token_program(setup.token_program)
-        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&wrong_withdrawer]);
@@ -337,7 +424,7 @@ fn test_withdraw_receipt_for_different_escrow_fails() {
     let vault_b = ctx.create_token_account(&setup_b.escrow_pda, &setup_a.mint.pubkey());
 
     let instruction = WithdrawBuilder::new()
-        .payer(ctx.payer.pubkey())
+        .rent_recipient(ctx.payer.pubkey())
         .withdrawer(setup_a.depositor.pubkey())
         .escrow(setup_b.escrow_pda)
         .extensions(setup_b.escrow_extensions_pda)
@@ -346,7 +433,6 @@ fn test_withdraw_receipt_for_different_escrow_fails() {
         .withdrawer_token_account(setup_a.depositor_token_account)
         .mint(setup_a.mint.pubkey())
         .token_program(setup_a.token_program)
-        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&setup_a.depositor]);
@@ -371,7 +457,7 @@ fn test_withdraw_double_withdraw_fails() {
     ctx.warp_to_slot(2);
 
     let instruction = WithdrawBuilder::new()
-        .payer(ctx.payer.pubkey())
+        .rent_recipient(ctx.payer.pubkey())
         .withdrawer(setup.depositor.pubkey())
         .escrow(setup.escrow_pda)
         .extensions(setup.extensions_pda)
@@ -380,7 +466,6 @@ fn test_withdraw_double_withdraw_fails() {
         .withdrawer_token_account(setup.depositor_token_account)
         .mint(setup.mint.pubkey())
         .token_program(setup.token_program)
-        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&setup.depositor]);
@@ -416,7 +501,7 @@ fn test_withdraw_rejects_reactivated_account_wrong_owner() {
     ctx.warp_to_slot(2);
 
     let instruction = WithdrawBuilder::new()
-        .payer(ctx.payer.pubkey())
+        .rent_recipient(ctx.payer.pubkey())
         .withdrawer(setup.depositor.pubkey())
         .escrow(setup.escrow_pda)
         .extensions(setup.extensions_pda)
@@ -425,7 +510,6 @@ fn test_withdraw_rejects_reactivated_account_wrong_owner() {
         .withdrawer_token_account(setup.depositor_token_account)
         .mint(setup.mint.pubkey())
         .token_program(setup.token_program)
-        .rent_recipient(ctx.payer.pubkey())
         .instruction();
 
     let error = ctx.send_transaction_expect_error(instruction, &[&setup.depositor]);
@@ -438,3 +522,43 @@ fn test_withdraw_rejects_reactivated_account_wrong_owner() {
         error
     );
 }
+
+// ============================================================================
+// Additional Hook Tests
+// ============================================================================
+
+#[test]
+fn test_withdraw_with_hook_wrong_program() {
+    let mut ctx = TestContext::new();
+
+    // Setup with a hook
+    let setup = WithdrawSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
+
+    // Build instruction but provide wrong hook program in remaining accounts
+    let wrong_hook = Pubkey::new_unique();
+
+    let mut instruction = WithdrawBuilder::new()
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .withdrawer_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .instruction();
+
+    // Add wrong hook program to remaining accounts
+    instruction.accounts.push(AccountMeta::new_readonly(wrong_hook, false));
+
+    let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    // Wrong hook program should fail with HookProgramMismatch
+    assert_escrow_error(error, EscrowError::HookProgramMismatch);
+}
+
+// ============================================================================
+// Edge Case Tests
+// ============================================================================

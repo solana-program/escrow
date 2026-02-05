@@ -1,13 +1,14 @@
 use crate::{
     fixtures::{DepositFixture, DepositSetup, DEFAULT_DEPOSIT_AMOUNT},
     utils::{
-        assert_custom_error, assert_instruction_error, find_receipt_pda, test_empty_data, test_missing_signer,
-        test_not_writable, test_wrong_current_program, test_wrong_owner, test_wrong_system_program,
-        test_wrong_token_program, TestContext, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
+        assert_custom_error, assert_escrow_error, assert_instruction_error, find_receipt_pda, test_empty_data,
+        test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program, test_wrong_owner,
+        test_wrong_system_program, test_wrong_token_program, EscrowError, TestContext, TestInstruction,
+        TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
     },
 };
 use escrow_program_client::instructions::DepositBuilder;
-use solana_sdk::{instruction::InstructionError, signature::Signer};
+use solana_sdk::{instruction::InstructionError, pubkey::Pubkey, signature::Signer};
 
 // ============================================================================
 // Error Tests - Using Generic Test Helpers
@@ -89,6 +90,123 @@ fn test_deposit_wrong_escrow_owner() {
 fn test_deposit_wrong_allowed_mint_owner() {
     let mut ctx = TestContext::new();
     test_wrong_owner::<DepositFixture>(&mut ctx, 3);
+}
+
+#[test]
+fn test_deposit_zero_amount() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+
+    // Build instruction with zero amount
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(setup.receipt_seed.pubkey())
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .extensions(setup.extensions_pda)
+        .bump(setup.bump)
+        .amount(0) // Zero amount
+        .instruction();
+
+    let test_ix = TestInstruction {
+        instruction,
+        signers: vec![setup.depositor.insecure_clone(), setup.receipt_seed.insecure_clone()],
+        name: "Deposit",
+    };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    // ZeroDepositAmount = error code 13
+    assert_escrow_error(error, EscrowError::ZeroDepositAmount);
+}
+
+#[test]
+fn test_deposit_invalid_event_authority() {
+    let mut ctx = TestContext::new();
+    // event_authority is at index 11 in instruction accounts
+    // Custom error 2 = InvalidEventAuthority
+    test_wrong_account::<DepositFixture>(&mut ctx, 11, InstructionError::Custom(2));
+}
+
+#[test]
+fn test_deposit_wrong_vault_ata() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+
+    // Create a token account at a wrong address (not the escrow's ATA)
+    let wrong_vault = Pubkey::new_unique();
+    ctx.create_token_account_at_address(&wrong_vault, &setup.escrow_pda, &setup.mint.pubkey(), 0);
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(setup.receipt_seed.pubkey())
+        .receipt(setup.receipt_pda)
+        .vault(wrong_vault) // Wrong vault address
+        .depositor_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .extensions(setup.extensions_pda)
+        .bump(setup.bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    let test_ix = TestInstruction {
+        instruction,
+        signers: vec![setup.depositor.insecure_clone(), setup.receipt_seed.insecure_clone()],
+        name: "Deposit",
+    };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountData);
+}
+
+#[test]
+fn test_deposit_wrong_depositor_token_account_owner() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+
+    // Create a token account owned by a different owner at a random address
+    let wrong_owner = Pubkey::new_unique();
+    let wrong_token_account = Pubkey::new_unique();
+    ctx.create_token_account_at_address(
+        &wrong_token_account,
+        &wrong_owner,
+        &setup.mint.pubkey(),
+        DEFAULT_DEPOSIT_AMOUNT,
+    );
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(setup.receipt_seed.pubkey())
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(wrong_token_account) // Wrong depositor token account
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .extensions(setup.extensions_pda)
+        .bump(setup.bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    let test_ix = TestInstruction {
+        instruction,
+        signers: vec![setup.depositor.insecure_clone(), setup.receipt_seed.insecure_clone()],
+        name: "Deposit",
+    };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountData);
 }
 
 // ============================================================================
@@ -217,4 +335,43 @@ fn test_deposit_with_hook_rejected() {
     let error = test_ix.send_expect_error(&mut ctx);
 
     assert_custom_error(error, TEST_HOOK_DENY_ERROR);
+}
+
+// ============================================================================
+// Additional Tests
+// ============================================================================
+
+#[test]
+fn test_deposit_allowed_mint_not_owned_by_program() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+
+    // Use a wrong AllowedMint PDA (random pubkey, not owned by program)
+    let wrong_allowed_mint = Pubkey::new_unique();
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(wrong_allowed_mint) // Invalid AllowedMint PDA
+        .receipt_seed(setup.receipt_seed.pubkey())
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .extensions(setup.extensions_pda)
+        .bump(setup.bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    let test_ix = TestInstruction {
+        instruction,
+        signers: vec![setup.depositor.insecure_clone(), setup.receipt_seed.insecure_clone()],
+        name: "Deposit",
+    };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    // Wrong AllowedMint address (not owned by program) should fail with InvalidAccountOwner
+    assert_instruction_error(error, InstructionError::InvalidAccountOwner);
 }

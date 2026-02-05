@@ -44,10 +44,9 @@ impl BlockMintSetup {
         self.build_instruction_with_rent_recipient(ctx, ctx.payer.pubkey())
     }
 
-    pub fn build_instruction_with_rent_recipient(&self, ctx: &TestContext, rent_recipient: Pubkey) -> TestInstruction {
+    pub fn build_instruction_with_rent_recipient(&self, _ctx: &TestContext, rent_recipient: Pubkey) -> TestInstruction {
         let instruction = BlockMintBuilder::new()
             .admin(self.admin.pubkey())
-            .payer(ctx.payer.pubkey())
             .rent_recipient(rent_recipient)
             .escrow(self.escrow_pda)
             .mint(self.mint_pubkey)
@@ -71,16 +70,15 @@ impl InstructionTestFixture for BlockMintFixture {
 
     /// Account indices that must be signers:
     /// 0: admin
-    /// 1: payer
     fn required_signers() -> &'static [usize] {
-        &[0, 1]
+        &[0]
     }
 
     /// Account indices that must be writable:
-    /// 2: rent_recipient (receives rent refund)
-    /// 5: allowed_mint (being closed)
+    /// 1: rent_recipient (receives rent refund)
+    /// 4: allowed_mint (being closed)
     fn required_writable() -> &'static [usize] {
-        &[2, 5]
+        &[1, 4]
     }
 
     fn system_program_index() -> Option<usize> {
@@ -88,7 +86,7 @@ impl InstructionTestFixture for BlockMintFixture {
     }
 
     fn current_program_index() -> Option<usize> {
-        Some(8)
+        Some(7)
     }
 
     fn data_len() -> usize {

@@ -28,6 +28,13 @@ fn test_allow_mint_allowed_mint_not_writable() {
 }
 
 #[test]
+fn test_allow_mint_vault_not_writable() {
+    let mut ctx = TestContext::new();
+    // vault is at index 6 in instruction accounts
+    test_not_writable::<AllowMintFixture>(&mut ctx, 6);
+}
+
+#[test]
 fn test_allow_mint_wrong_system_program() {
     let mut ctx = TestContext::new();
     test_wrong_system_program::<AllowMintFixture>(&mut ctx);
@@ -100,6 +107,14 @@ fn test_allow_mint_wrong_mint() {
 fn test_allow_mint_wrong_token_program() {
     let mut ctx = TestContext::new();
     let error = AllowMintFixture::build_valid(&mut ctx).with_account_at(7, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::IncorrectProgramId);
+}
+
+#[test]
+fn test_allow_mint_wrong_associated_token_program() {
+    let mut ctx = TestContext::new();
+    // associated_token_program is at index 8 in instruction accounts
+    let error = AllowMintFixture::build_valid(&mut ctx).with_account_at(8, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::IncorrectProgramId);
 }
 
