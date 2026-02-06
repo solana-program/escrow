@@ -17,6 +17,7 @@ pub enum EventDiscriminators {
     AllowMint = 6,
     BlockMint = 7,
     TokenExtensionBlocked = 8,
+    ArbiterSet = 9,
 }
 
 /// Event discriminator with Anchor-compatible prefix

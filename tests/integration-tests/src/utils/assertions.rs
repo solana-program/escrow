@@ -1,7 +1,7 @@
 use crate::utils::extensions_utils::{
-    block_token_extensions_byte_len, find_extension, ESCROW_EXTENSIONS_DISCRIMINATOR,
-    EXTENSION_TYPE_BLOCK_TOKEN_EXTENSIONS, EXTENSION_TYPE_HOOK, EXTENSION_TYPE_TIMELOCK, HOOK_DATA_LEN,
-    TIMELOCK_DATA_LEN,
+    block_token_extensions_byte_len, find_extension, ARBITER_DATA_LEN, ESCROW_EXTENSIONS_DISCRIMINATOR,
+    EXTENSION_TYPE_ARBITER, EXTENSION_TYPE_BLOCK_TOKEN_EXTENSIONS, EXTENSION_TYPE_HOOK, EXTENSION_TYPE_TIMELOCK,
+    HOOK_DATA_LEN, TIMELOCK_DATA_LEN,
 };
 use crate::utils::TestContext;
 use escrow_program_client::{
@@ -122,6 +122,17 @@ pub fn assert_block_token_extensions_extension(
         let ext = u16::from_le_bytes([tlv_data[offset], tlv_data[offset + 1]]);
         assert_eq!(ext, expected_ext, "Wrong blocked extension at index {i}");
     }
+}
+
+pub fn assert_arbiter_extension(ctx: &TestContext, extensions_pda: &Pubkey, expected_arbiter: &Pubkey) {
+    let account = ctx.get_account(extensions_pda).expect("Extensions account should exist");
+    let data = &account.data;
+
+    let tlv_data = find_extension(data, EXTENSION_TYPE_ARBITER).expect("Arbiter extension not found");
+    assert_eq!(tlv_data.len(), ARBITER_DATA_LEN, "Wrong arbiter data length");
+
+    let arbiter = Pubkey::new_from_array(tlv_data[0..32].try_into().unwrap());
+    assert_eq!(arbiter, *expected_arbiter, "Wrong arbiter");
 }
 
 pub fn assert_allowed_mint_account(ctx: &TestContext, allowed_mint_pda: &Pubkey, expected_bump: u8) {

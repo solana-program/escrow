@@ -2,7 +2,10 @@ use alloc::vec::Vec;
 use pinocchio::error::ProgramError;
 
 use crate::{
-    state::{BlockTokenExtensionsData, EscrowExtensionsHeader, ExtensionType, HookData, TimelockData, TLV_HEADER_SIZE},
+    state::{
+        ArbiterData, BlockTokenExtensionsData, EscrowExtensionsHeader, ExtensionType, HookData, TimelockData,
+        TLV_HEADER_SIZE,
+    },
     traits::ExtensionData,
 };
 
@@ -59,6 +62,11 @@ impl<'a> TlvReader<'a> {
             .flatten()
             .and_then(|data| BlockTokenExtensionsData::from_bytes(data).ok())
     }
+
+    /// Read arbiter extension if present
+    pub fn read_arbiter(&self) -> Option<ArbiterData> {
+        self.find_extension(ExtensionType::Arbiter).ok().flatten().and_then(|data| ArbiterData::from_bytes(data).ok())
+    }
 }
 
 /// Helper to write TLV extensions to account data
@@ -91,6 +99,11 @@ impl TlvWriter {
     /// Write blocked token extensions
     pub fn write_block_token_extensions(&mut self, block_token_extensions: &BlockTokenExtensionsData) {
         self.write_extension(ExtensionType::BlockedTokenExtensions, &block_token_extensions.to_bytes());
+    }
+
+    /// Write arbiter extension
+    pub fn write_arbiter(&mut self, arbiter: &ArbiterData) {
+        self.write_extension(ExtensionType::Arbiter, &arbiter.to_bytes());
     }
 
     /// Get the total TLV data

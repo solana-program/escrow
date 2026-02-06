@@ -16,6 +16,7 @@ pub enum ExtensionType {
     Timelock = 0,
     Hook = 1,
     BlockedTokenExtensions = 2,
+    Arbiter = 3,
 }
 
 impl TryFrom<u16> for ExtensionType {
@@ -26,6 +27,7 @@ impl TryFrom<u16> for ExtensionType {
             0 => Ok(Self::Timelock),
             1 => Ok(Self::Hook),
             2 => Ok(Self::BlockedTokenExtensions),
+            3 => Ok(Self::Arbiter),
             _ => Err(ProgramError::InvalidAccountData),
         }
     }
@@ -363,6 +365,8 @@ mod tests {
     fn test_extension_type_try_from() {
         assert_eq!(ExtensionType::try_from(0u16).unwrap(), ExtensionType::Timelock);
         assert_eq!(ExtensionType::try_from(1u16).unwrap(), ExtensionType::Hook);
+        assert_eq!(ExtensionType::try_from(2u16).unwrap(), ExtensionType::BlockedTokenExtensions);
+        assert_eq!(ExtensionType::try_from(3u16).unwrap(), ExtensionType::Arbiter);
         assert!(ExtensionType::try_from(999u16).is_err());
     }
 

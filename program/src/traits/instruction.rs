@@ -12,6 +12,7 @@ pub enum EscrowInstructionDiscriminators {
     AllowMint = 6,
     BlockMint = 7,
     BlockTokenExtension = 8,
+    SetArbiter = 9,
     EmitEvent = 228,
 }
 
@@ -29,6 +30,7 @@ impl TryFrom<u8> for EscrowInstructionDiscriminators {
             6 => Ok(Self::AllowMint),
             7 => Ok(Self::BlockMint),
             8 => Ok(Self::BlockTokenExtension),
+            9 => Ok(Self::SetArbiter),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }
@@ -138,8 +140,15 @@ mod tests {
     }
 
     #[test]
-    fn test_discriminator_try_from_invalid() {
+    fn test_discriminator_try_from_set_arbiter() {
         let result = EscrowInstructionDiscriminators::try_from(9u8);
+        assert!(result.is_ok());
+        assert!(matches!(result.unwrap(), EscrowInstructionDiscriminators::SetArbiter));
+    }
+
+    #[test]
+    fn test_discriminator_try_from_invalid() {
+        let result = EscrowInstructionDiscriminators::try_from(10u8);
         assert!(matches!(result, Err(ProgramError::InvalidInstructionData)));
 
         let result = EscrowInstructionDiscriminators::try_from(255u8);

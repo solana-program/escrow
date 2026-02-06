@@ -25,9 +25,12 @@ use crate::{
 /// 10. `[]` event_authority - Event authority PDA
 /// 11. `[]` escrow_program - Current program
 ///
-/// # Remaining Accounts (if hook configured)
-/// 0. `[]` hook_program - The hook program to invoke
-/// 1. ..N. `[]` extra accounts - Additional accounts to pass to the hook (all read-only)
+/// # Remaining Accounts
+/// If arbiter extension is set:
+///   0. `[signer]` arbiter - The arbiter who must authorize the withdrawal
+/// If hook extension is set (after arbiter if both):
+///   N. `[]` hook_program - The hook program to invoke (N=0 if no arbiter, N=1 if arbiter present)
+///   N+1..M. `[]` extra accounts - Additional accounts to pass to the hook (all read-only)
 pub struct WithdrawAccounts<'a> {
     pub rent_recipient: &'a AccountView,
     pub withdrawer: &'a AccountView,

@@ -560,5 +560,190 @@ fn test_withdraw_with_hook_wrong_program() {
 }
 
 // ============================================================================
+// Arbiter Tests
+// ============================================================================
+
+#[test]
+fn test_withdraw_with_arbiter_success() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new_with_arbiter(&mut ctx);
+
+    let initial_withdrawer_balance = ctx.get_token_balance(&setup.depositor_token_account);
+    let initial_vault_balance = ctx.get_token_balance(&setup.vault);
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    let final_withdrawer_balance = ctx.get_token_balance(&setup.depositor_token_account);
+    let final_vault_balance = ctx.get_token_balance(&setup.vault);
+
+    assert_eq!(final_withdrawer_balance, initial_withdrawer_balance + DEFAULT_DEPOSIT_AMOUNT);
+    assert_eq!(final_vault_balance, initial_vault_balance - DEFAULT_DEPOSIT_AMOUNT);
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed");
+}
+
+#[test]
+fn test_withdraw_with_arbiter_missing_signer() {
+    let mut ctx = TestContext::new();
+    let mut setup = WithdrawSetup::new(&mut ctx);
+    let arbiter = setup.set_arbiter(&mut ctx);
+
+    // Build instruction manually without arbiter as signer
+    let mut builder = WithdrawBuilder::new();
+    builder
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .withdrawer_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program);
+
+    // Add arbiter as non-signer (should fail)
+    builder.add_remaining_account(AccountMeta::new_readonly(arbiter.pubkey(), false));
+
+    let instruction = builder.instruction();
+    let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::InvalidArbiter);
+}
+
+#[test]
+fn test_withdraw_with_arbiter_wrong_address() {
+    let mut ctx = TestContext::new();
+    let mut setup = WithdrawSetup::new(&mut ctx);
+    setup.set_arbiter(&mut ctx);
+
+    // Build instruction with wrong arbiter address
+    let wrong_arbiter = ctx.create_funded_keypair();
+
+    let mut builder = WithdrawBuilder::new();
+    builder
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .withdrawer_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program);
+
+    builder.add_remaining_account(AccountMeta::new_readonly(wrong_arbiter.pubkey(), true));
+
+    let instruction = builder.instruction();
+    let test_ix = TestInstruction {
+        instruction,
+        signers: vec![setup.depositor.insecure_clone(), wrong_arbiter],
+        name: "Withdraw",
+    };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::InvalidArbiter);
+}
+
+#[test]
+fn test_withdraw_with_arbiter_no_remaining_accounts() {
+    let mut ctx = TestContext::new();
+    let mut setup = WithdrawSetup::new(&mut ctx);
+    setup.set_arbiter(&mut ctx);
+
+    // Build instruction without any remaining accounts (arbiter required but missing)
+    let instruction = WithdrawBuilder::new()
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(setup.vault)
+        .withdrawer_token_account(setup.depositor_token_account)
+        .mint(setup.mint.pubkey())
+        .token_program(setup.token_program)
+        .instruction();
+
+    let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::InvalidArbiter);
+}
+
+#[test]
+fn test_withdraw_with_arbiter_and_hook_success() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::builder(&mut ctx).arbiter().hook_program(TEST_HOOK_ALLOW_ID).build();
+
+    let initial_withdrawer_balance = ctx.get_token_balance(&setup.depositor_token_account);
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    let final_withdrawer_balance = ctx.get_token_balance(&setup.depositor_token_account);
+    assert_eq!(final_withdrawer_balance, initial_withdrawer_balance + DEFAULT_DEPOSIT_AMOUNT);
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed");
+}
+
+#[test]
+fn test_withdraw_with_arbiter_and_timelock_success() {
+    let mut ctx = TestContext::new();
+    let lock_duration = 3600u64;
+    let setup = WithdrawSetup::builder(&mut ctx).arbiter().timelock(lock_duration).build();
+
+    // Should fail before timelock expires
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::TimelockNotExpired);
+
+    // Warp past timelock
+    let current_time = ctx.get_current_timestamp();
+    ctx.warp_to_timestamp(current_time + lock_duration as i64 + 1);
+    ctx.warp_to_slot(2);
+
+    // Should succeed after timelock expires with arbiter
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed");
+}
+
+#[test]
+fn test_withdraw_with_arbiter_hook_and_timelock_success() {
+    let mut ctx = TestContext::new();
+    let lock_duration = 3600u64;
+    let setup =
+        WithdrawSetup::builder(&mut ctx).arbiter().hook_program(TEST_HOOK_ALLOW_ID).timelock(lock_duration).build();
+
+    // Should fail before timelock expires
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::TimelockNotExpired);
+
+    // Warp past timelock
+    let current_time = ctx.get_current_timestamp();
+    ctx.warp_to_timestamp(current_time + lock_duration as i64 + 1);
+    ctx.warp_to_slot(2);
+
+    // Should succeed after timelock expires with arbiter + hook
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed");
+}
+
+#[test]
+fn test_withdraw_without_arbiter_extension_no_signer_needed() {
+    // Escrow without arbiter extension should work without any remaining accounts for arbiter
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed");
+}
+
+// ============================================================================
 // Edge Case Tests
 // ============================================================================
