@@ -139,6 +139,22 @@ pub enum EscrowProgramInstruction {
         blocked_extension: u16,
     } = 8,
 
+    /// Set an arbiter on an escrow. The arbiter must sign withdrawal transactions.
+    /// This is immutable — once set, the arbiter cannot be changed.
+    #[codama(account(name = "payer", signer, writable))]
+    #[codama(account(name = "admin", signer))]
+    #[codama(account(name = "escrow"))]
+    #[codama(account(name = "extensions", writable))]
+    #[codama(account(name = "system_program"))]
+    #[codama(account(name = "event_authority"))]
+    #[codama(account(name = "escrow_program"))]
+    SetArbiter {
+        /// Bump for extensions PDA
+        extensions_bump: u8,
+        /// Arbiter address that must sign withdrawals
+        arbiter: Address,
+    } = 9,
+
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(account(name = "event_authority", signer))]
     EmitEvent {} = 228,

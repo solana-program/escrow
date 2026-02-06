@@ -3,8 +3,8 @@ use pinocchio::{account::AccountView, entrypoint, error::ProgramError, Address, 
 use crate::{
     instructions::{
         process_add_timelock, process_allow_mint, process_block_mint, process_block_token_extension,
-        process_create_escrow, process_deposit, process_emit_event, process_set_hook, process_update_admin,
-        process_withdraw,
+        process_create_escrow, process_deposit, process_emit_event, process_set_arbiter, process_set_hook,
+        process_update_admin, process_withdraw,
     },
     traits::EscrowInstructionDiscriminators,
 };
@@ -29,6 +29,7 @@ pub fn process_instruction(program_id: &Address, accounts: &[AccountView], instr
         EscrowInstructionDiscriminators::BlockTokenExtension => {
             process_block_token_extension(program_id, accounts, instruction_data)
         }
+        EscrowInstructionDiscriminators::SetArbiter => process_set_arbiter(program_id, accounts, instruction_data),
         EscrowInstructionDiscriminators::EmitEvent => process_emit_event(program_id, accounts),
     }
 }

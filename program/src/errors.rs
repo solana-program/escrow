@@ -60,6 +60,10 @@ pub enum EscrowProgramError {
     /// (13) Zero deposit amount
     #[error("Zero deposit amount")]
     ZeroDepositAmount,
+
+    /// (14) Arbiter signer is missing or does not match
+    #[error("Arbiter signer is missing or does not match")]
+    InvalidArbiter,
 }
 
 impl From<EscrowProgramError> for ProgramError {

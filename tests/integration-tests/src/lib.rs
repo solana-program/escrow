@@ -14,6 +14,8 @@ mod test_create_escrow;
 #[cfg(test)]
 mod test_deposit;
 #[cfg(test)]
+mod test_set_arbiter;
+#[cfg(test)]
 mod test_set_hook;
 #[cfg(test)]
 mod test_update_admin;

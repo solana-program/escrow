@@ -3,12 +3,14 @@ const TLV_HEADER_SIZE: usize = 4;
 pub const EXTENSION_TYPE_TIMELOCK: u16 = 0;
 pub const EXTENSION_TYPE_HOOK: u16 = 1;
 pub const EXTENSION_TYPE_BLOCK_TOKEN_EXTENSIONS: u16 = 2;
+pub const EXTENSION_TYPE_ARBITER: u16 = 3;
 
 pub const ESCROW_EXTENSIONS_DISCRIMINATOR: u8 = 1;
 pub const ESCROW_EXTENSIONS_HEADER_LEN: usize = 4; // discriminator + bump + version + extension_count
 
 pub const TIMELOCK_DATA_LEN: usize = 8;
 pub const HOOK_DATA_LEN: usize = 32;
+pub const ARBITER_DATA_LEN: usize = 32;
 
 /// Calculate the expected byte length for block token extensions data
 pub fn block_token_extensions_byte_len(count: usize) -> usize {

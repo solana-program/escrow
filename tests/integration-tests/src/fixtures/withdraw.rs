@@ -9,7 +9,7 @@ use solana_sdk::{
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use spl_token_interface::ID as TOKEN_PROGRAM_ID;
 
-use crate::fixtures::{SetHookFixture, DEFAULT_DEPOSIT_AMOUNT};
+use crate::fixtures::{SetArbiterFixture, SetHookFixture, DEFAULT_DEPOSIT_AMOUNT};
 use crate::utils::traits::{InstructionTestFixture, TestInstruction};
 use crate::utils::{find_allowed_mint_pda, find_escrow_pda, find_extensions_pda, find_receipt_pda, TestContext};
 
@@ -27,6 +27,7 @@ pub struct WithdrawSetup {
     pub admin: Keypair,
     pub token_program: Pubkey,
     pub hook_program: Option<Pubkey>,
+    pub arbiter: Option<Keypair>,
 }
 
 impl WithdrawSetup {
@@ -58,6 +59,19 @@ impl WithdrawSetup {
         Self::builder(ctx).token_2022().hook_program(hook_program).build()
     }
 
+    pub fn new_with_arbiter(ctx: &mut TestContext) -> Self {
+        Self::builder(ctx).arbiter().build()
+    }
+
+    pub fn set_arbiter(&mut self, ctx: &mut TestContext) -> Keypair {
+        let arbiter = ctx.create_funded_keypair();
+        let test_ix =
+            SetArbiterFixture::build_with_escrow(ctx, self.escrow_pda, self.admin.insecure_clone(), arbiter.pubkey());
+        test_ix.send_expect_success(ctx);
+        self.arbiter = Some(arbiter.insecure_clone());
+        arbiter
+    }
+
     pub fn set_hook(&mut self, ctx: &mut TestContext, hook_program: Pubkey) {
         let test_ix =
             SetHookFixture::build_with_escrow(ctx, self.escrow_pda, self.admin.insecure_clone(), hook_program);
@@ -82,13 +96,21 @@ impl WithdrawSetup {
             .mint(self.mint.pubkey())
             .token_program(self.token_program);
 
+        let mut signers = vec![self.depositor.insecure_clone()];
+
+        // Arbiter must be first in remaining_accounts (before hook_program)
+        if let Some(ref arbiter) = self.arbiter {
+            builder.add_remaining_account(AccountMeta::new_readonly(arbiter.pubkey(), true));
+            signers.push(arbiter.insecure_clone());
+        }
+
         if let Some(hook_program) = self.hook_program {
             builder.add_remaining_account(AccountMeta::new_readonly(hook_program, false));
         }
 
         let instruction = builder.instruction();
 
-        TestInstruction { instruction, signers: vec![self.depositor.insecure_clone()], name: "Withdraw" }
+        TestInstruction { instruction, signers, name: "Withdraw" }
     }
 }
 
@@ -97,11 +119,12 @@ pub struct WithdrawSetupBuilder<'a> {
     token_program: Pubkey,
     timelock: Option<u64>,
     hook_program: Option<Pubkey>,
+    arbiter: bool,
 }
 
 impl<'a> WithdrawSetupBuilder<'a> {
     fn new(ctx: &'a mut TestContext) -> Self {
-        Self { ctx, token_program: TOKEN_PROGRAM_ID, timelock: None, hook_program: None }
+        Self { ctx, token_program: TOKEN_PROGRAM_ID, timelock: None, hook_program: None, arbiter: false }
     }
 
     pub fn token_2022(mut self) -> Self {
@@ -121,6 +144,11 @@ impl<'a> WithdrawSetupBuilder<'a> {
 
     pub fn hook_program(mut self, program: Pubkey) -> Self {
         self.hook_program = Some(program);
+        self
+    }
+
+    pub fn arbiter(mut self) -> Self {
+        self.arbiter = true;
         self
     }
 
@@ -158,6 +186,16 @@ impl<'a> WithdrawSetupBuilder<'a> {
             let test_ix = SetHookFixture::build_with_escrow(self.ctx, escrow_pda, admin.insecure_clone(), hook_id);
             test_ix.send_expect_success(self.ctx);
         }
+
+        let arbiter = if self.arbiter {
+            let arbiter_kp = self.ctx.create_funded_keypair();
+            let test_ix =
+                SetArbiterFixture::build_with_escrow(self.ctx, escrow_pda, admin.insecure_clone(), arbiter_kp.pubkey());
+            test_ix.send_expect_success(self.ctx);
+            Some(arbiter_kp)
+        } else {
+            None
+        };
 
         let mint = Keypair::new();
         let token_program = self.token_program;
@@ -243,6 +281,7 @@ impl<'a> WithdrawSetupBuilder<'a> {
             admin,
             token_program,
             hook_program: self.hook_program,
+            arbiter,
         }
     }
 }

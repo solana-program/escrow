@@ -5,8 +5,8 @@ use crate::{
     events::WithdrawEvent,
     instructions::Withdraw,
     state::{
-        get_extensions_from_account, validate_extensions_pda, Escrow, ExtensionType, HookData, HookPoint, Receipt,
-        TimelockData,
+        get_extensions_from_account, validate_extensions_pda, ArbiterData, Escrow, ExtensionType, HookData, HookPoint,
+        Receipt, TimelockData,
     },
     traits::{AccountDeserialize, EventSerialize, ExtensionData},
     utils::{close_pda_account, emit_event, get_mint_decimals},
@@ -38,8 +38,11 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
     // Validate extensions PDA
     validate_extensions_pda(ix.accounts.escrow, ix.accounts.extensions, program_id)?;
 
-    // Get timelock and hook extensions in single pass
-    let exts = get_extensions_from_account(ix.accounts.extensions, &[ExtensionType::Timelock, ExtensionType::Hook])?;
+    // Get timelock, hook, and arbiter extensions in single pass
+    let exts = get_extensions_from_account(
+        ix.accounts.extensions,
+        &[ExtensionType::Timelock, ExtensionType::Hook, ExtensionType::Arbiter],
+    )?;
 
     // Validate timelock if present
     if let Some(ref timelock_bytes) = exts[0] {
@@ -50,11 +53,21 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
     // Parse hook if present
     let hook_data = exts[1].as_ref().map(|b| HookData::from_bytes(b)).transpose()?;
 
+    // Validate arbiter if present — arbiter is first in remaining_accounts
+    let remaining_accounts = if let Some(ref arbiter_bytes) = exts[2] {
+        let arbiter = ArbiterData::from_bytes(arbiter_bytes)?;
+        arbiter.validate(ix.accounts.remaining_accounts)?;
+        // Skip arbiter account, pass rest to hook
+        ix.accounts.remaining_accounts.get(1..).unwrap_or(&[])
+    } else {
+        ix.accounts.remaining_accounts
+    };
+
     // Invoke pre-withdraw hook if configured
     if let Some(ref hook) = hook_data {
         hook.invoke(
             HookPoint::PreWithdraw,
-            ix.accounts.remaining_accounts,
+            remaining_accounts,
             &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
@@ -86,7 +99,7 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
     if let Some(ref hook) = hook_data {
         hook.invoke(
             HookPoint::PostWithdraw,
-            ix.accounts.remaining_accounts,
+            remaining_accounts,
             &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint],
         )?;
     }
