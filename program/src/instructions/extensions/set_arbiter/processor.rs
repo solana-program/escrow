@@ -16,11 +16,6 @@ use crate::{
 pub fn process_set_arbiter(program_id: &Address, accounts: &[AccountView], instruction_data: &[u8]) -> ProgramResult {
     let ix = SetArbiter::try_from((instruction_data, accounts))?;
 
-    // Reject zero-address arbiter — would make withdrawals permanently impossible
-    if ix.data.arbiter == Address::default() {
-        return Err(ProgramError::InvalidArgument);
-    }
-
     // Read escrow and validate
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
@@ -31,7 +26,7 @@ pub fn process_set_arbiter(program_id: &Address, accounts: &[AccountView], instr
     extensions_pda.validate_pda(ix.accounts.extensions, program_id, ix.data.extensions_bump)?;
 
     // Build TLV data
-    let arbiter = ArbiterData::new(ix.data.arbiter);
+    let arbiter = ArbiterData::new(*ix.accounts.arbiter.address());
     let mut tlv_writer = TlvWriter::new();
     tlv_writer.write_arbiter(&arbiter);
 
@@ -51,7 +46,7 @@ pub fn process_set_arbiter(program_id: &Address, accounts: &[AccountView], instr
     )?;
 
     // Emit event
-    let event = ArbiterSetEvent::new(*ix.accounts.escrow.address(), ix.data.arbiter);
+    let event = ArbiterSetEvent::new(*ix.accounts.escrow.address(), *ix.accounts.arbiter.address());
     emit_event(program_id, ix.accounts.event_authority, ix.accounts.escrow_program, &event.to_bytes())?;
 
     Ok(())

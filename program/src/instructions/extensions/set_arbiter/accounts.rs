@@ -13,14 +13,16 @@ use crate::{
 /// # Account Layout
 /// 0. `[signer, writable]` payer - Pays for account creation
 /// 1. `[signer]` admin - Must match escrow.admin
-/// 2. `[]` escrow - Escrow account to set arbiter on
-/// 3. `[writable]` extensions - Extensions PDA (created if doesn't exist)
-/// 4. `[]` system_program - System program for account creation
-/// 5. `[]` event_authority - Event authority PDA
-/// 6. `[]` escrow_program - Current program
+/// 2. `[signer]` arbiter - Address that must sign future withdrawals
+/// 3. `[]` escrow - Escrow account to set arbiter on
+/// 4. `[writable]` extensions - Extensions PDA (created if doesn't exist)
+/// 5. `[]` system_program - System program for account creation
+/// 6. `[]` event_authority - Event authority PDA
+/// 7. `[]` escrow_program - Current program
 pub struct SetArbiterAccounts<'a> {
     pub payer: &'a AccountView,
     pub admin: &'a AccountView,
+    pub arbiter: &'a AccountView,
     pub escrow: &'a AccountView,
     pub extensions: &'a AccountView,
     pub system_program: &'a AccountView,
@@ -33,13 +35,15 @@ impl<'a> TryFrom<&'a [AccountView]> for SetArbiterAccounts<'a> {
 
     #[inline(always)]
     fn try_from(accounts: &'a [AccountView]) -> Result<Self, Self::Error> {
-        let [payer, admin, escrow, extensions, system_program, event_authority, escrow_program] = accounts else {
+        let [payer, admin, arbiter, escrow, extensions, system_program, event_authority, escrow_program] = accounts
+        else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
         // 1. Validate signers
         verify_signer(payer, true)?;
         verify_signer(admin, false)?;
+        verify_signer(arbiter, false)?;
 
         // 2. Validate writable
         verify_writable(extensions, true)?;
@@ -55,7 +59,7 @@ impl<'a> TryFrom<&'a [AccountView]> for SetArbiterAccounts<'a> {
         // 5. Validate accounts owned by current program
         verify_current_program_account(escrow)?;
 
-        Ok(Self { payer, admin, escrow, extensions, system_program, event_authority, escrow_program })
+        Ok(Self { payer, admin, arbiter, escrow, extensions, system_program, event_authority, escrow_program })
     }
 }
 

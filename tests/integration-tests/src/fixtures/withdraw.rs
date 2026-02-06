@@ -65,8 +65,12 @@ impl WithdrawSetup {
 
     pub fn set_arbiter(&mut self, ctx: &mut TestContext) -> Keypair {
         let arbiter = ctx.create_funded_keypair();
-        let test_ix =
-            SetArbiterFixture::build_with_escrow(ctx, self.escrow_pda, self.admin.insecure_clone(), arbiter.pubkey());
+        let test_ix = SetArbiterFixture::build_with_escrow(
+            ctx,
+            self.escrow_pda,
+            self.admin.insecure_clone(),
+            arbiter.insecure_clone(),
+        );
         test_ix.send_expect_success(ctx);
         self.arbiter = Some(arbiter.insecure_clone());
         arbiter
@@ -189,8 +193,12 @@ impl<'a> WithdrawSetupBuilder<'a> {
 
         let arbiter = if self.arbiter {
             let arbiter_kp = self.ctx.create_funded_keypair();
-            let test_ix =
-                SetArbiterFixture::build_with_escrow(self.ctx, escrow_pda, admin.insecure_clone(), arbiter_kp.pubkey());
+            let test_ix = SetArbiterFixture::build_with_escrow(
+                self.ctx,
+                escrow_pda,
+                admin.insecure_clone(),
+                arbiter_kp.insecure_clone(),
+            );
             test_ix.send_expect_success(self.ctx);
             Some(arbiter_kp)
         } else {

@@ -1381,6 +1381,12 @@
             "name": "admin"
           },
           {
+            "isSigner": true,
+            "isWritable": false,
+            "kind": "instructionAccountNode",
+            "name": "arbiter"
+          },
+          {
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1433,13 +1439,6 @@
               "endian": "le",
               "format": "u8",
               "kind": "numberTypeNode"
-            }
-          },
-          {
-            "kind": "instructionArgumentNode",
-            "name": "arbiter",
-            "type": {
-              "kind": "publicKeyTypeNode"
             }
           }
         ],

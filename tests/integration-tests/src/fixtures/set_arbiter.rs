@@ -1,5 +1,4 @@
 use escrow_program_client::instructions::SetArbiterBuilder;
-use solana_address::Address;
 use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},
@@ -19,20 +18,20 @@ impl SetArbiterFixture {
         ctx: &mut TestContext,
         escrow_pda: Pubkey,
         admin: Keypair,
-        arbiter: Pubkey,
+        arbiter: Keypair,
     ) -> TestInstruction {
         let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
 
         let instruction = SetArbiterBuilder::new()
             .payer(ctx.payer.pubkey())
             .admin(admin.pubkey())
+            .arbiter(arbiter.pubkey())
             .escrow(escrow_pda)
             .extensions(extensions_pda)
             .extensions_bump(extensions_bump)
-            .arbiter(Address::from(arbiter.to_bytes()))
             .instruction();
 
-        TestInstruction { instruction, signers: vec![admin], name: Self::INSTRUCTION_NAME }
+        TestInstruction { instruction, signers: vec![admin, arbiter], name: Self::INSTRUCTION_NAME }
     }
 }
 
@@ -48,41 +47,41 @@ impl InstructionTestFixture for SetArbiterFixture {
         let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
         let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
 
-        let arbiter = Pubkey::new_unique();
+        let arbiter = Keypair::new();
 
         let instruction = SetArbiterBuilder::new()
             .payer(ctx.payer.pubkey())
             .admin(admin.pubkey())
+            .arbiter(arbiter.pubkey())
             .escrow(escrow_pda)
             .extensions(extensions_pda)
             .extensions_bump(extensions_bump)
-            .arbiter(Address::from(arbiter.to_bytes()))
             .instruction();
 
-        TestInstruction { instruction, signers: vec![admin], name: Self::INSTRUCTION_NAME }
+        TestInstruction { instruction, signers: vec![admin, arbiter], name: Self::INSTRUCTION_NAME }
     }
 
     /// Account indices that must be signers:
-    /// 1: admin (payer at 0 is handled separately by TestContext)
+    /// 1: admin, 2: arbiter (payer at 0 is handled separately by TestContext)
     fn required_signers() -> &'static [usize] {
-        &[1]
+        &[1, 2]
     }
 
     /// Account indices that must be writable:
-    /// 3: extensions (payer at 0 is handled separately by TestContext)
+    /// 4: extensions (payer at 0 is handled separately by TestContext)
     fn required_writable() -> &'static [usize] {
-        &[3]
+        &[4]
     }
 
     fn system_program_index() -> Option<usize> {
-        Some(4)
+        Some(5)
     }
 
     fn current_program_index() -> Option<usize> {
-        Some(6)
+        Some(7)
     }
 
     fn data_len() -> usize {
-        34
+        2
     }
 }

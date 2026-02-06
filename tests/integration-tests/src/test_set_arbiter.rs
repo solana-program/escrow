@@ -7,7 +7,11 @@ use crate::{
         test_wrong_system_program, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
-use solana_sdk::{instruction::InstructionError, pubkey::Pubkey, signature::Signer};
+use solana_sdk::{
+    instruction::InstructionError,
+    pubkey::Pubkey,
+    signature::{Keypair, Signer},
+};
 
 // ============================================================================
 // Error Tests - Using Generic Test Helpers
@@ -20,9 +24,15 @@ fn test_set_arbiter_missing_admin_signer() {
 }
 
 #[test]
+fn test_set_arbiter_missing_arbiter_signer() {
+    let mut ctx = TestContext::new();
+    test_missing_signer::<SetArbiterFixture>(&mut ctx, 2, 1);
+}
+
+#[test]
 fn test_set_arbiter_extensions_not_writable() {
     let mut ctx = TestContext::new();
-    test_not_writable::<SetArbiterFixture>(&mut ctx, 3);
+    test_not_writable::<SetArbiterFixture>(&mut ctx, 4);
 }
 
 #[test]
@@ -40,7 +50,7 @@ fn test_set_arbiter_wrong_escrow_program() {
 #[test]
 fn test_set_arbiter_invalid_event_authority() {
     let mut ctx = TestContext::new();
-    test_wrong_account::<SetArbiterFixture>(&mut ctx, 5, InstructionError::Custom(2));
+    test_wrong_account::<SetArbiterFixture>(&mut ctx, 6, InstructionError::Custom(2));
 }
 
 #[test]
@@ -79,7 +89,7 @@ fn test_set_arbiter_wrong_admin() {
 
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
     let wrong_admin = ctx.create_funded_keypair();
-    let arbiter = Pubkey::new_unique();
+    let arbiter = Keypair::new();
     let test_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, wrong_admin, arbiter);
 
     let error = test_ix.send_expect_error(&mut ctx);
@@ -91,7 +101,7 @@ fn test_set_arbiter_escrow_not_owned_by_program() {
     let mut ctx = TestContext::new();
     let test_ix = SetArbiterFixture::build_valid(&mut ctx);
 
-    let error = test_ix.with_account_at(2, RANDOM_PUBKEY).send_expect_error(&mut ctx);
+    let error = test_ix.with_account_at(3, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
 }
 
@@ -105,13 +115,13 @@ fn test_set_arbiter_duplicate_extension() {
     escrow_ix.send_expect_success(&mut ctx);
 
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
-    let arbiter = Pubkey::new_unique();
+    let arbiter = Keypair::new();
 
     let first_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), arbiter);
     first_ix.send_expect_success(&mut ctx);
 
     // Second attempt should fail — arbiter is immutable
-    let second_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin, Pubkey::new_unique());
+    let second_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin, Keypair::new());
     let error = second_ix.send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::AccountAlreadyInitialized);
 }
@@ -125,9 +135,9 @@ fn test_set_arbiter_success() {
     let mut ctx = TestContext::new();
     let test_ix = SetArbiterFixture::build_valid(&mut ctx);
 
-    let extensions_pda = test_ix.instruction.accounts[3].pubkey;
+    let extensions_pda = test_ix.instruction.accounts[4].pubkey;
     let extensions_bump = test_ix.instruction.data[1];
-    let arbiter = Pubkey::new_from_array(test_ix.instruction.data[2..34].try_into().unwrap());
+    let arbiter = test_ix.instruction.accounts[2].pubkey;
 
     test_ix.send_expect_success(&mut ctx);
 
@@ -157,13 +167,14 @@ fn test_add_timelock_then_set_arbiter() {
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
     assert_timelock_extension(&ctx, &extensions_pda, 3600);
 
-    let arbiter = Pubkey::new_unique();
+    let arbiter = Keypair::new();
+    let arbiter_pubkey = arbiter.pubkey();
     let arbiter_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin, arbiter);
     arbiter_ix.send_expect_success(&mut ctx);
 
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 2);
     assert_timelock_extension(&ctx, &extensions_pda, 3600);
-    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter);
+    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter_pubkey);
 }
 
 #[test]
@@ -178,19 +189,20 @@ fn test_set_arbiter_then_set_hook() {
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
     let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
 
-    let arbiter = Pubkey::new_unique();
+    let arbiter = Keypair::new();
+    let arbiter_pubkey = arbiter.pubkey();
     let arbiter_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), arbiter);
     arbiter_ix.send_expect_success(&mut ctx);
 
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
-    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter);
+    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter_pubkey);
 
     let hook_program = Pubkey::new_unique();
     let hook_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin, hook_program);
     hook_ix.send_expect_success(&mut ctx);
 
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 2);
-    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter);
+    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter_pubkey);
     assert_hook_extension(&ctx, &extensions_pda, &hook_program);
 }
 
@@ -213,12 +225,13 @@ fn test_all_three_extensions() {
     let hook_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), hook_program);
     hook_ix.send_expect_success(&mut ctx);
 
-    let arbiter = Pubkey::new_unique();
+    let arbiter = Keypair::new();
+    let arbiter_pubkey = arbiter.pubkey();
     let arbiter_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin, arbiter);
     arbiter_ix.send_expect_success(&mut ctx);
 
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 3);
     assert_timelock_extension(&ctx, &extensions_pda, 7200);
     assert_hook_extension(&ctx, &extensions_pda, &hook_program);
-    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter);
+    assert_arbiter_extension(&ctx, &extensions_pda, &arbiter_pubkey);
 }
