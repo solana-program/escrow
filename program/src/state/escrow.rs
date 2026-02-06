@@ -11,8 +11,8 @@ use pinocchio::{
 use crate::assert_no_padding;
 use crate::errors::EscrowProgramError;
 use crate::traits::{
-    AccountDeserialize, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaAccount, PdaSeeds,
-    Versioned,
+    AccountDeserialize, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaAccount,
+    PdaSeeds, Versioned,
 };
 
 /// Escrow account state

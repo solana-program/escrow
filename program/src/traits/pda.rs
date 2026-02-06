@@ -61,9 +61,9 @@ pub trait PdaAccount: PdaSeeds {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloc::vec;
     use crate::state::Escrow;
     use crate::ID;
+    use alloc::vec;
 
     struct TestPdaAccount {
         pub seed: Address,
