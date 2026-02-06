@@ -11,7 +11,8 @@ use pinocchio::{
 use crate::assert_no_padding;
 use crate::errors::EscrowProgramError;
 use crate::traits::{
-    AccountDeserialize, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaSeeds, Versioned,
+    AccountDeserialize, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaAccount,
+    PdaSeeds, Versioned,
 };
 
 /// Escrow account state
@@ -67,6 +68,13 @@ impl PdaSeeds for Escrow {
     }
 }
 
+impl PdaAccount for Escrow {
+    #[inline(always)]
+    fn bump(&self) -> u8 {
+        self.bump
+    }
+}
+
 impl Escrow {
     #[inline(always)]
     pub fn new(bump: u8, escrow_seed: Address, admin: Address) -> Self {
@@ -80,7 +88,7 @@ impl Escrow {
         program_id: &Address,
     ) -> Result<&'a Self, ProgramError> {
         let state = Self::from_bytes(data)?;
-        state.validate_pda(account, program_id, state.bump)?;
+        state.validate_self(account, program_id)?;
         Ok(state)
     }
 
