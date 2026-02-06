@@ -45,11 +45,48 @@ pub trait PdaSeeds {
     }
 }
 
+/// Extension trait for account types that store their PDA bump.
+/// Provides convenience methods that use the stored bump value.
+pub trait PdaAccount: PdaSeeds {
+    /// Returns the stored bump seed for this account's PDA
+    fn bump(&self) -> u8;
+
+    /// Validate that account matches derived PDA using stored bump
+    #[inline(always)]
+    fn validate_self(&self, account: &AccountView, program_id: &Address) -> Result<(), ProgramError> {
+        self.validate_pda(account, program_id, self.bump())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::state::Escrow;
     use crate::ID;
+    use alloc::vec;
+
+    struct TestPdaAccount {
+        pub seed: Address,
+        pub bump: u8,
+    }
+
+    impl PdaSeeds for TestPdaAccount {
+        const PREFIX: &'static [u8] = b"test_account";
+
+        fn seeds(&self) -> Vec<&[u8]> {
+            vec![Self::PREFIX, self.seed.as_ref()]
+        }
+
+        fn seeds_with_bump<'a>(&'a self, bump: &'a [u8; 1]) -> Vec<Seed<'a>> {
+            vec![Seed::from(Self::PREFIX), Seed::from(self.seed.as_ref()), Seed::from(&bump[..])]
+        }
+    }
+
+    impl PdaAccount for TestPdaAccount {
+        fn bump(&self) -> u8 {
+            self.bump
+        }
+    }
 
     #[test]
     fn test_derive_address_deterministic() {
@@ -75,5 +112,26 @@ mod tests {
         let (address2, _) = escrow2.derive_address(&ID);
 
         assert_ne!(address1, address2);
+    }
+
+    #[test]
+    fn test_pda_account_bump() {
+        let account = TestPdaAccount { seed: Address::new_from_array([1u8; 32]), bump: 254 };
+        assert_eq!(account.bump(), 254);
+    }
+
+    #[test]
+    fn test_pda_account_inherits_pda_seeds() {
+        let account = TestPdaAccount { seed: Address::new_from_array([1u8; 32]), bump: 255 };
+        let seeds = account.seeds();
+        assert_eq!(seeds.len(), 2);
+        assert_eq!(seeds[0], TestPdaAccount::PREFIX);
+    }
+
+    #[test]
+    fn test_pda_account_derive_address() {
+        let account = TestPdaAccount { seed: Address::new_from_array([1u8; 32]), bump: 255 };
+        let (address, _bump) = account.derive_address(&ID);
+        assert!(!address.as_ref().iter().all(|&b| b == 0));
     }
 }

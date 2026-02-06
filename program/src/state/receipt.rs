@@ -5,7 +5,8 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address};
 
 use crate::errors::EscrowProgramError::{InvalidReceiptEscrow, InvalidWithdrawer};
 use crate::traits::{
-    AccountParse, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaSeeds, Versioned,
+    AccountParse, AccountSerialize, AccountSize, Discriminator, EscrowAccountDiscriminators, PdaAccount, PdaSeeds,
+    Versioned,
 };
 use crate::{assert_no_padding, require_account_len, validate_discriminator};
 
@@ -108,6 +109,13 @@ impl PdaSeeds for Receipt {
     }
 }
 
+impl PdaAccount for Receipt {
+    #[inline(always)]
+    fn bump(&self) -> u8 {
+        self.bump
+    }
+}
+
 impl Receipt {
     #[inline(always)]
     pub fn new(
@@ -125,7 +133,7 @@ impl Receipt {
     #[inline(always)]
     pub fn from_account(data: &[u8], account: &AccountView, program_id: &Address) -> Result<Self, ProgramError> {
         let state = Self::parse_from_bytes(data)?;
-        state.validate_pda(account, program_id, state.bump)?;
+        state.validate_self(account, program_id)?;
         Ok(state)
     }
 
