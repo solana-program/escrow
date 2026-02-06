@@ -18,7 +18,7 @@ pub fn process_set_arbiter(program_id: &Address, accounts: &[AccountView], instr
 
     // Reject zero-address arbiter — would make withdrawals permanently impossible
     if ix.data.arbiter == Address::default() {
-        return Err(ProgramError::InvalidArgument.into());
+        return Err(ProgramError::InvalidArgument);
     }
 
     // Read escrow and validate
