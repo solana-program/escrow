@@ -546,42 +546,63 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Pays for escrow account creation"
+            ],
             "isSigner": true,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "payer"
           },
           {
+            "docs": [
+              "Admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "Random keypair seed for escrow PDA derivation"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrowSeed"
           },
           {
+            "docs": [
+              "Escrow PDA account to be created"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -626,42 +647,63 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Pays for extensions account creation"
+            ],
             "isSigner": true,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "payer"
           },
           {
+            "docs": [
+              "Admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "Escrow account to add timelock to"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Extensions PDA account to store timelock config"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "extensions"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -715,42 +757,63 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Pays for extensions account creation"
+            ],
             "isSigner": true,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "payer"
           },
           {
+            "docs": [
+              "Admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "Escrow account to set hook on"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Extensions PDA account to store hook config"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "extensions"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -802,84 +865,126 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Pays for receipt account creation"
+            ],
             "isSigner": true,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "payer"
           },
           {
+            "docs": [
+              "Authority depositing tokens"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "depositor"
           },
           {
+            "docs": [
+              "Escrow account to deposit into"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Allowed mint PDA proving this mint is permitted"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "allowedMint"
           },
           {
+            "docs": [
+              "Random keypair seed for receipt PDA derivation"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "receiptSeed"
           },
           {
+            "docs": [
+              "Deposit receipt PDA to be created"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "receipt"
           },
           {
+            "docs": [
+              "Escrow vault token account to receive tokens"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "vault"
           },
           {
+            "docs": [
+              "Depositor's token account to transfer from"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "depositorTokenAccount"
           },
           {
+            "docs": [
+              "Token mint of the deposited tokens"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "mint"
           },
           {
+            "docs": [
+              "SPL Token program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "tokenProgram"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrowProgram"
           },
           {
+            "docs": [
+              "Extensions PDA for escrow configuration"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -933,30 +1038,45 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Current admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "New admin authority to transfer ownership to"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "newAdmin"
           },
           {
+            "docs": [
+              "Escrow account to update admin on"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -992,72 +1112,108 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Receives rent from closed receipt account"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "rentRecipient"
           },
           {
+            "docs": [
+              "Authority withdrawing tokens"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "withdrawer"
           },
           {
+            "docs": [
+              "Escrow account to withdraw from"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Extensions PDA for escrow configuration"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "extensions"
           },
           {
+            "docs": [
+              "Deposit receipt to close upon withdrawal"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "receipt"
           },
           {
+            "docs": [
+              "Escrow vault token account to transfer from"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "vault"
           },
           {
+            "docs": [
+              "Withdrawer's token account to receive tokens"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "withdrawerTokenAccount"
           },
           {
+            "docs": [
+              "Token mint of the withdrawn tokens"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "mint"
           },
           {
+            "docs": [
+              "SPL Token program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "tokenProgram"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1093,72 +1249,108 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Pays for allowed mint and vault account creation"
+            ],
             "isSigner": true,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "payer"
           },
           {
+            "docs": [
+              "Admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "Escrow account to allow mint on"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Extensions PDA for escrow configuration"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrowExtensions"
           },
           {
+            "docs": [
+              "Token mint to allow for deposits"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "mint"
           },
           {
+            "docs": [
+              "Allowed mint PDA to be created"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "allowedMint"
           },
           {
+            "docs": [
+              "Escrow vault ATA to be created for this mint"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "vault"
           },
           {
+            "docs": [
+              "SPL Token program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "tokenProgram"
           },
           {
+            "docs": [
+              "Associated Token program for vault creation"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "associatedTokenProgram"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1203,48 +1395,72 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "Receives rent from closed allowed mint account"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "rentRecipient"
           },
           {
+            "docs": [
+              "Escrow account to block mint on"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Token mint to block from deposits"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "mint"
           },
           {
+            "docs": [
+              "Allowed mint PDA to be closed"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "allowedMint"
           },
           {
+            "docs": [
+              "SPL Token program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "tokenProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1280,42 +1496,63 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Pays for extensions account creation"
+            ],
             "isSigner": true,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "payer"
           },
           {
+            "docs": [
+              "Admin authority for the escrow"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "admin"
           },
           {
+            "docs": [
+              "Escrow account to block extension on"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "escrow"
           },
           {
+            "docs": [
+              "Extensions PDA account to store blocked extensions"
+            ],
             "isSigner": false,
             "isWritable": true,
             "kind": "instructionAccountNode",
             "name": "extensions"
           },
           {
+            "docs": [
+              "System program"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "systemProgram"
           },
           {
+            "docs": [
+              "Event authority PDA for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
             "name": "eventAuthority"
           },
           {
+            "docs": [
+              "Escrow program for CPI event emission"
+            ],
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1455,6 +1692,9 @@
       {
         "accounts": [
           {
+            "docs": [
+              "Event authority PDA that must sign via CPI"
+            ],
             "isSigner": true,
             "isWritable": false,
             "kind": "instructionAccountNode",
