@@ -195,7 +195,6 @@ try {
     const earlyWithdrawIx = await getWithdrawInstructionAsync({
         escrow: escrowPda,
         mint: mintKeypair.address,
-        payer,
         receipt: receiptPda,
         rentRecipient: payer.address,
         withdrawer: payer,
@@ -227,7 +226,6 @@ await sleep(CONFIG.TIMELOCK_WAIT_MS);
 const withdrawIx = await getWithdrawInstructionAsync({
     escrow: escrowPda,
     mint: mintKeypair.address,
-    payer,
     receipt: receiptPda,
     rentRecipient: payer.address,
     withdrawer: payer,
