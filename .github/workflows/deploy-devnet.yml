@@ -71,6 +71,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
+      - uses: pnpm/action-setup@v4
+
       - name: Download program binary
         uses: actions/download-artifact@v4
         with:
@@ -109,9 +111,6 @@ jobs:
           name: idl
           path: idl/
 
-      - name: Install program-metadata CLI
-        run: cargo install program-metadata-cli
-
       - name: Write deployer keypair
         run: echo '${{ secrets.DEPLOYER_SECRET_KEY }}' > deployer.json
 
@@ -122,7 +121,7 @@ jobs:
           max_attempts: 3
           retry_wait_seconds: 30
           command: |
-            program-metadata write idl Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg idl/escrow_program.json \
+            pnpx @solana-program/program-metadata@0.5.1 write idl Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg idl/escrow_program.json \
               --keypair deployer.json \
               --rpc ${{ secrets.DEVNET_RPC_URL }}
 
