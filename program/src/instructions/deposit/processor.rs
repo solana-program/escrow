@@ -13,7 +13,8 @@ use crate::{
     events::DepositEvent,
     instructions::Deposit,
     state::{
-        get_extensions_from_account, AllowedMint, AllowedMintPda, Escrow, ExtensionType, HookData, HookPoint, Receipt,
+        get_extensions_from_account, validate_extensions_pda, AllowedMint, AllowedMintPda, Escrow, ExtensionType,
+        HookData, HookPoint, Receipt,
     },
     traits::{AccountSerialize, AccountSize, EventSerialize, ExtensionData, PdaSeeds},
     utils::{create_pda_account, emit_event, get_mint_decimals},
@@ -69,6 +70,9 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
     let mut receipt_data_slice = ix.accounts.receipt.try_borrow_mut()?;
     receipt.write_to_slice(&mut receipt_data_slice)?;
     drop(receipt_data_slice);
+
+    // Validate extensions PDA
+    validate_extensions_pda(ix.accounts.escrow, ix.accounts.extensions, program_id)?;
 
     // Get hook extension if present
     let exts = get_extensions_from_account(ix.accounts.extensions, &[ExtensionType::Hook])?;
