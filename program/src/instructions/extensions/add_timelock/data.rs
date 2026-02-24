@@ -19,7 +19,12 @@ impl<'a> TryFrom<&'a [u8]> for AddTimelockData {
     fn try_from(data: &'a [u8]) -> Result<Self, Self::Error> {
         require_len!(data, Self::LEN);
 
-        Ok(Self { extensions_bump: data[0], lock_duration: u64::from_le_bytes(data[1..9].try_into().unwrap()) })
+        let lock_duration = u64::from_le_bytes(data[1..9].try_into().unwrap());
+        if lock_duration > i64::MAX as u64 {
+            return Err(ProgramError::InvalidInstructionData);
+        }
+
+        Ok(Self { extensions_bump: data[0], lock_duration })
     }
 }
 

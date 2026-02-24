@@ -37,8 +37,8 @@ impl TimelockData {
             return Ok(());
         }
 
-        let unlock_time =
-            deposited_at.checked_add(self.lock_duration as i64).ok_or(ProgramError::ArithmeticOverflow)?;
+        let lock_duration_i64 = i64::try_from(self.lock_duration).map_err(|_| ProgramError::ArithmeticOverflow)?;
+        let unlock_time = deposited_at.checked_add(lock_duration_i64).ok_or(ProgramError::ArithmeticOverflow)?;
         let clock = Clock::get()?;
         if clock.unix_timestamp < unlock_time {
             return Err(EscrowProgramError::TimelockNotExpired.into());
