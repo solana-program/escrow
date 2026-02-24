@@ -134,7 +134,7 @@ fn test_add_timelock_success() {
 
 #[test]
 fn test_add_timelock_success_lock_duration_values() {
-    for lock_duration in [0u64, 1, 60, 3600, 86400, u64::MAX] {
+    for lock_duration in [0u64, 1, 60, 3600, 86400, i64::MAX as u64] {
         let mut ctx = TestContext::new();
 
         let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
@@ -150,5 +150,23 @@ fn test_add_timelock_success_lock_duration_values() {
 
         assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
         assert_timelock_extension(&ctx, &extensions_pda, lock_duration);
+    }
+}
+
+#[test]
+fn test_add_timelock_rejects_lock_duration_exceeding_i64_max() {
+    for lock_duration in [i64::MAX as u64 + 1, u64::MAX] {
+        let mut ctx = TestContext::new();
+
+        let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+        let admin = escrow_ix.signers[0].insecure_clone();
+        let escrow_seed = escrow_ix.signers[1].pubkey();
+        escrow_ix.send_expect_success(&mut ctx);
+
+        let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+
+        let test_ix = AddTimelockFixture::build_with_escrow(&mut ctx, escrow_pda, admin, lock_duration);
+        let error = test_ix.send_expect_error(&mut ctx);
+        assert_instruction_error(error, InstructionError::InvalidInstructionData);
     }
 }
