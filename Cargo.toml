@@ -21,7 +21,7 @@ unexpected_cfgs = { level = "warn", check-cfg = [
 ] }
 
 [workspace.dependencies]
-codama = "^0.7.2"
+codama = { git = "https://github.com/amilz/codama-rs", branch = "feat/instruction-attributes" }
 serde_json = "^1.0.145"
 const-crypto = "^0.3.0"
 pinocchio = "^0.10.1"

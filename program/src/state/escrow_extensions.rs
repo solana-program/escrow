@@ -46,6 +46,11 @@ pub const TLV_HEADER_SIZE: usize = 4;
 /// [discriminator: 1][version: 1][header: 2][TLV extensions: variable]
 /// ```
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
+#[codama(field("discriminator", number(u8), default_value = 1))]
+#[codama(discriminator(field = "discriminator"))]
+#[codama(pda = "extensions")]
+#[codama(seed(type = string(utf8), value = "extensions"))]
+#[codama(seed(name = "escrow", type = public_key))]
 #[repr(C)]
 pub struct EscrowExtensionsHeader {
     pub bump: u8,

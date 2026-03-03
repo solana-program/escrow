@@ -18,12 +18,10 @@ const rustClientsDir = path.join(__dirname, '..', 'clients', 'rust');
 const typescriptClientsDir = path.join(__dirname, '..', 'clients', 'typescript');
 
 const escrowCodama = createEscrowCodamaBuilder(escrowIdl)
-    .appendAccountDiscriminator()
     .appendAccountVersion()
-    .appendPdaDerivers()
-    .setInstructionAccountDefaultValues()
-    .updateInstructionBumps()
-    .removeEmitInstruction()
+    // .setInstructionAccountDefaultValues()  // Now handled by codama-rs: ata() and pda() defaults
+    // .updateInstructionBumps()              // Now handled by codama-rs: account_bump() defaults
+    // .removeEmitInstruction()               // Now handled by codama-rs: #[codama(skip)]
     .build();
 
 // Preserve configuration files during generation

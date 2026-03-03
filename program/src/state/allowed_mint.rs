@@ -17,6 +17,11 @@ use crate::traits::{
 /// # PDA Seeds
 /// `[b"allowed_mint", escrow.as_ref(), mint.as_ref()]`
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
+#[codama(field("discriminator", number(u8), default_value = 3))]
+#[codama(discriminator(field = "discriminator"))]
+#[codama(seed(type = string(utf8), value = "allowed_mint"))]
+#[codama(seed(name = "escrow", type = public_key))]
+#[codama(seed(name = "mint", type = public_key))]
 #[repr(C)]
 pub struct AllowedMint {
     pub bump: u8,
