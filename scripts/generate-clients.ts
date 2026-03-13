@@ -17,12 +17,7 @@ const escrowIdl = JSON.parse(fs.readFileSync(path.join(idlDir, 'escrow_program.j
 const rustClientsDir = path.join(__dirname, '..', 'clients', 'rust');
 const typescriptClientsDir = path.join(__dirname, '..', 'clients', 'typescript');
 
-const escrowCodama = createEscrowCodamaBuilder(escrowIdl)
-    .appendAccountVersion()
-    // .setInstructionAccountDefaultValues()  // Now handled by codama-rs: ata() and pda() defaults
-    // .updateInstructionBumps()              // Now handled by codama-rs: account_bump() defaults
-    // .removeEmitInstruction()               // Now handled by codama-rs: #[codama(skip)]
-    .build();
+const escrowCodama = createEscrowCodamaBuilder(escrowIdl).appendAccountVersion().build();
 
 // Preserve configuration files during generation
 const configPreserver = preserveConfigFiles(typescriptClientsDir, rustClientsDir);
