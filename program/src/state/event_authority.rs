@@ -1,7 +1,6 @@
-use codama::CodamaPda;
+use codama::CodamaAccount;
 
-/// PDA definition for the event authority.
-/// This has no account data — it's only used for CPI event emission signing.
-#[derive(CodamaPda)]
+/// Event authority PDA — no account data, only used for CPI event emission signing.
+#[derive(CodamaAccount)]
 #[codama(seed(type = string(utf8), value = "event_authority"))]
 pub struct EventAuthority;

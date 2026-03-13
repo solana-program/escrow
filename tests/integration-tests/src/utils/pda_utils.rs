@@ -1,5 +1,4 @@
-use escrow_program_client::accounts::{AllowedMint, Escrow, EscrowExtensionsHeader, Receipt};
-use escrow_program_client::ESCROW_PROGRAM_ID;
+use escrow_program_client::accounts::{AllowedMint, Escrow, EscrowExtensionsHeader, EventAuthority, Receipt};
 use solana_sdk::pubkey::Pubkey;
 
 pub fn find_escrow_pda(escrow_seed: &Pubkey) -> (Pubkey, u8) {
@@ -11,7 +10,7 @@ pub fn find_extensions_pda(escrow: &Pubkey) -> (Pubkey, u8) {
 }
 
 pub fn find_event_authority_pda() -> (Pubkey, u8) {
-    Pubkey::find_program_address(&[b"event_authority"], &ESCROW_PROGRAM_ID)
+    EventAuthority::find_pda()
 }
 
 pub fn find_receipt_pda(escrow: &Pubkey, depositor: &Pubkey, mint: &Pubkey, receipt_seed: &Pubkey) -> (Pubkey, u8) {

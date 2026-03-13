@@ -194,6 +194,18 @@
       },
       {
         "data": {
+          "fields": [],
+          "kind": "structTypeNode"
+        },
+        "kind": "accountNode",
+        "name": "eventAuthority",
+        "pda": {
+          "kind": "pdaLinkNode",
+          "name": "eventAuthority"
+        }
+      },
+      {
+        "data": {
           "fields": [
             {
               "defaultValue": {
