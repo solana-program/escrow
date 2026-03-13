@@ -24,7 +24,7 @@ function SavedField({ label, value, onChange, onSave, savedValues, datalistId, p
                 value={value}
                 onChange={e => onChange(e.target.value)}
                 placeholder={placeholder}
-                trailingAction={
+                action={
                     <Button
                         type="button"
                         size="sm"

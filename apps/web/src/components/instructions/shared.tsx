@@ -35,7 +35,7 @@ export function FormField({
         <TextInput
             label={label}
             description={hint}
-            trailingAction={
+            action={
                 onAutoFill ? (
                     <Button
                         type="button"
