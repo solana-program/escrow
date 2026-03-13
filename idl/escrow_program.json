@@ -45,6 +45,18 @@
     "accounts": [
       {
         "data": {
+          "fields": [],
+          "kind": "structTypeNode"
+        },
+        "kind": "accountNode",
+        "name": "eventAuthority",
+        "pda": {
+          "kind": "pdaLinkNode",
+          "name": "eventAuthority"
+        }
+      },
+      {
+        "data": {
           "fields": [
             {
               "defaultValue": {
@@ -190,18 +202,6 @@
         "pda": {
           "kind": "pdaLinkNode",
           "name": "extensions"
-        }
-      },
-      {
-        "data": {
-          "fields": [],
-          "kind": "structTypeNode"
-        },
-        "kind": "accountNode",
-        "name": "eventAuthority",
-        "pda": {
-          "kind": "pdaLinkNode",
-          "name": "eventAuthority"
         }
       },
       {
@@ -2440,6 +2440,23 @@
     "pdas": [
       {
         "kind": "pdaNode",
+        "name": "eventAuthority",
+        "seeds": [
+          {
+            "kind": "constantPdaSeedNode",
+            "type": {
+              "encoding": "utf8",
+              "kind": "stringTypeNode"
+            },
+            "value": {
+              "kind": "stringValueNode",
+              "string": "event_authority"
+            }
+          }
+        ]
+      },
+      {
+        "kind": "pdaNode",
         "name": "allowedMint",
         "seeds": [
           {
@@ -2513,23 +2530,6 @@
             "name": "escrow",
             "type": {
               "kind": "publicKeyTypeNode"
-            }
-          }
-        ]
-      },
-      {
-        "kind": "pdaNode",
-        "name": "eventAuthority",
-        "seeds": [
-          {
-            "kind": "constantPdaSeedNode",
-            "type": {
-              "encoding": "utf8",
-              "kind": "stringTypeNode"
-            },
-            "value": {
-              "kind": "stringValueNode",
-              "string": "event_authority"
             }
           }
         ]
