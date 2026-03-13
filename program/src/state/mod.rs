@@ -1,15 +1,11 @@
 pub mod allowed_mint;
-pub mod associated_token;
 pub mod escrow;
 pub mod escrow_extensions;
-pub mod event_authority;
 pub mod extensions;
 pub mod receipt;
 
 pub use allowed_mint::*;
-pub use associated_token::*;
 pub use escrow::*;
 pub use escrow_extensions::*;
-pub use event_authority::*;
 pub use extensions::*;
 pub use receipt::*;
