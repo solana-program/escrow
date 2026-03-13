@@ -35,6 +35,7 @@ check:
     cd program && cargo check --features idl
     pnpm run format:check
     pnpm lint
+    pnpm run typecheck
 
 # Run unit tests
 unit-test:

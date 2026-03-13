@@ -1245,7 +1245,7 @@
               "seeds": [
                 {
                   "kind": "pdaSeedValueNode",
-                  "name": "escrow",
+                  "name": "owner",
                   "value": {
                     "kind": "accountValueNode",
                     "name": "escrow"
@@ -1291,7 +1291,7 @@
               "seeds": [
                 {
                   "kind": "pdaSeedValueNode",
-                  "name": "depositor",
+                  "name": "owner",
                   "value": {
                     "kind": "accountValueNode",
                     "name": "depositor"
@@ -1619,7 +1619,7 @@
               "seeds": [
                 {
                   "kind": "pdaSeedValueNode",
-                  "name": "escrow",
+                  "name": "owner",
                   "value": {
                     "kind": "accountValueNode",
                     "name": "escrow"
@@ -1665,7 +1665,7 @@
               "seeds": [
                 {
                   "kind": "pdaSeedValueNode",
-                  "name": "withdrawer",
+                  "name": "owner",
                   "value": {
                     "kind": "accountValueNode",
                     "name": "withdrawer"
@@ -1897,7 +1897,7 @@
               "seeds": [
                 {
                   "kind": "pdaSeedValueNode",
-                  "name": "escrow",
+                  "name": "owner",
                   "value": {
                     "kind": "accountValueNode",
                     "name": "escrow"
