@@ -116,13 +116,13 @@ pub enum EscrowProgramInstruction {
         name = "vault",
         docs = "Escrow vault token account to receive tokens",
         writable,
-        default_value = ata("escrow", "mint", "tokenProgram")
+        default_value = pda("associatedToken", program = "associatedToken", [account("escrow"), account("tokenProgram"), account("mint")])
     ))]
     #[codama(account(
         name = "depositor_token_account",
         docs = "Depositor's token account to transfer from",
         writable,
-        default_value = ata("depositor", "mint", "tokenProgram")
+        default_value = pda("associatedToken", program = "associatedToken", [account("depositor"), account("tokenProgram"), account("mint")])
     ))]
     #[codama(account(name = "mint", docs = "Token mint of the deposited tokens"))]
     #[codama(account(name = "token_program", docs = "SPL Token program", default_value = program("token")))]
@@ -180,13 +180,13 @@ pub enum EscrowProgramInstruction {
         name = "vault",
         docs = "Escrow vault token account to transfer from",
         writable,
-        default_value = ata("escrow", "mint", "tokenProgram")
+        default_value = pda("associatedToken", program = "associatedToken", [account("escrow"), account("tokenProgram"), account("mint")])
     ))]
     #[codama(account(
         name = "withdrawer_token_account",
         docs = "Withdrawer's token account to receive tokens",
         writable,
-        default_value = ata("withdrawer", "mint", "tokenProgram")
+        default_value = pda("associatedToken", program = "associatedToken", [account("withdrawer"), account("tokenProgram"), account("mint")])
     ))]
     #[codama(account(name = "mint", docs = "Token mint of the withdrawn tokens"))]
     #[codama(account(name = "token_program", docs = "SPL Token program", default_value = program("token")))]
@@ -224,7 +224,7 @@ pub enum EscrowProgramInstruction {
         name = "vault",
         docs = "Escrow vault ATA to be created for this mint",
         writable,
-        default_value = ata("escrow", "mint", "tokenProgram")
+        default_value = pda("associatedToken", program = "associatedToken", [account("escrow"), account("tokenProgram"), account("mint")])
     ))]
     #[codama(account(name = "token_program", docs = "SPL Token program", default_value = program("token")))]
     #[codama(account(
