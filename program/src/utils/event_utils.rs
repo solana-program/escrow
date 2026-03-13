@@ -1,3 +1,5 @@
+use codama::CodamaAccount;
+
 use crate::errors::EscrowProgramError::InvalidEventAuthority;
 use pinocchio::{
     account::AccountView,
@@ -8,6 +10,11 @@ use pinocchio::{
 };
 
 use crate::events::{event_authority_pda, EVENT_AUTHORITY_SEED};
+
+/// Event authority PDA — no account data, only used for CPI event emission signing.
+#[derive(CodamaAccount)]
+#[codama(seed(type = string(utf8), value = "event_authority"))]
+pub struct EventAuthority;
 
 /// Verify the account is the event authority PDA, returning an error if it is not.
 ///

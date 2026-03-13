@@ -1,6 +1,5 @@
 pub mod account_utils;
 pub mod associated_token;
-pub mod event_authority;
 pub mod event_utils;
 pub mod macros;
 pub mod pda_utils;
