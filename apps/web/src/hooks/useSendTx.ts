@@ -1,28 +1,30 @@
 'use client';
 
-import { useCallback, useState } from 'react';
 import {
     appendTransactionMessageInstructions,
     assertIsTransactionWithBlockhashLifetime,
     createTransactionMessage,
     getSignatureFromTransaction,
+    type Instruction,
     pipe,
     sendAndConfirmTransactionFactory,
     setTransactionMessageFeePayerSigner,
     setTransactionMessageLifetimeUsingBlockhash,
     signTransactionMessageWithSigners,
-    type Instruction,
 } from '@solana/kit';
-import { useRpc, useRpcSubscriptions } from './useRpc';
+import { useCallback, useState } from 'react';
+
 import type { RecentTransactionValues } from '@/contexts/RecentTransactionsContext';
 import { useRecentTransactions } from '@/contexts/RecentTransactionsContext';
 import { useWallet } from '@/contexts/WalletContext';
 import { formatTransactionError } from '@/lib/transactionErrors';
 
+import { useRpc, useRpcSubscriptions } from './useRpc';
+
 export interface SendTxState {
+    error: string | null;
     sending: boolean;
     signature: string | null;
-    error: string | null;
 }
 
 export interface SendTxOptions {
@@ -37,9 +39,9 @@ export function useSendTx() {
     const { addRecentTransaction } = useRecentTransactions();
 
     const [state, setState] = useState<SendTxState>({
+        error: null,
         sending: false,
         signature: null,
-        error: null,
     });
 
     const send = useCallback(
@@ -50,7 +52,7 @@ export function useSendTx() {
                 return null;
             }
 
-            setState({ sending: true, signature: null, error: null });
+            setState({ error: null, sending: true, signature: null });
 
             let txSignature: string | null = null;
             try {
@@ -74,29 +76,29 @@ export function useSendTx() {
                     skipPreflight: true,
                 });
                 addRecentTransaction({
+                    action: options?.action ?? 'Transaction',
                     id: txId,
                     signature: txSignature,
-                    action: options?.action ?? 'Transaction',
-                    timestamp: Date.now(),
                     status: 'success',
+                    timestamp: Date.now(),
                     values: options?.values,
                 });
-                setState({ sending: false, signature: txSignature, error: null });
+                setState({ error: null, sending: false, signature: txSignature });
                 return txSignature;
             } catch (err) {
                 const message = formatTransactionError(err);
                 // Keep detailed error in devtools while presenting concise UI text.
                 console.error('Transaction send failed', err);
                 addRecentTransaction({
+                    action: options?.action ?? 'Transaction',
+                    error: message,
                     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                     signature: txSignature,
-                    action: options?.action ?? 'Transaction',
-                    timestamp: Date.now(),
                     status: 'failed',
-                    error: message,
+                    timestamp: Date.now(),
                     values: options?.values,
                 });
-                setState({ sending: false, signature: null, error: message });
+                setState({ error: message, sending: false, signature: null });
                 return null;
             }
         },
@@ -104,8 +106,8 @@ export function useSendTx() {
     );
 
     const reset = useCallback(() => {
-        setState({ sending: false, signature: null, error: null });
+        setState({ error: null, sending: false, signature: null });
     }, []);
 
-    return { ...state, send, reset };
+    return { ...state, reset, send };
 }

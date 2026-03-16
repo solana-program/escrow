@@ -57,7 +57,12 @@ export function SetArbiter() {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form
+            onSubmit={e => {
+                void handleSubmit(e);
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
             <div>
                 <Badge variant="info">
                     Arbiter must co-sign with admin. This form sets your connected wallet as arbiter.

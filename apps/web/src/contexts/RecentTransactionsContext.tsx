@@ -36,7 +36,7 @@ const RecentTransactionsContext = createContext<RecentTransactionsContextType | 
 
 function normalizeValues(values?: RecentTransactionValues): RecentTransactionValues | undefined {
     if (!values) return undefined;
-    const normalizedEntries = Object.entries(values)
+    const normalizedEntries = (Object.entries(values) as [string, string | undefined][])
         .map(([key, value]) => [key, value?.trim() ?? ''] as const)
         .filter(([, value]) => value.length > 0);
     if (normalizedEntries.length === 0) return undefined;
@@ -47,17 +47,19 @@ function readStoredTransactions(): RecentTransaction[] {
     try {
         const raw = window.localStorage.getItem(STORAGE_KEY);
         if (!raw) return [];
-        const parsed = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
         if (!Array.isArray(parsed)) return [];
-        return parsed
-            .filter(item => item && typeof item === 'object')
+        return (parsed as Record<string, unknown>[])
+            .filter(item => item !== null && typeof item === 'object')
             .map(item => ({
-                id: String(item.id ?? item.signature ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
-                signature: item.signature ? String(item.signature) : null,
-                action: String(item.action ?? 'Transaction'),
+                id: String(
+                    (item.id ?? item.signature ?? `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`) as string,
+                ),
+                signature: item.signature ? String(item.signature as string) : null,
+                action: String((item.action ?? 'Transaction') as string),
                 timestamp: Number(item.timestamp ?? Date.now()),
                 status: item.status === 'failed' ? ('failed' as const) : ('success' as const),
-                error: item.error ? formatTransactionError(String(item.error)) : undefined,
+                error: item.error ? formatTransactionError(String(item.error as string)) : undefined,
                 values: normalizeValues(item.values as RecentTransactionValues | undefined),
             }))
             .slice(0, MAX_RECENT_TRANSACTIONS);

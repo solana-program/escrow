@@ -62,7 +62,7 @@ function readFromStorage(): SavedValuesState {
     try {
         const raw = window.localStorage.getItem(STORAGE_KEY);
         if (!raw) return INITIAL_STATE;
-        const parsed = JSON.parse(raw);
+        const parsed: unknown = JSON.parse(raw);
         if (!isSavedValuesState(parsed)) return INITIAL_STATE;
         return {
             defaultEscrow: normalizeValue(parsed.defaultEscrow),

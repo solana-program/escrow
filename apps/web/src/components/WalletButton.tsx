@@ -11,7 +11,8 @@ function truncateAddress(address: string, start = 6, end = 6) {
 }
 
 export function WalletButton() {
-    const { wallet, publicKey, connected, connecting, connect, disconnect } = useAdapterWallet();
+    const walletAdapter = useAdapterWallet();
+    const { wallet, publicKey, connected, connecting } = walletAdapter;
     const { setVisible } = useWalletModal();
 
     const handleConnect = useCallback(async () => {
@@ -20,11 +21,11 @@ export function WalletButton() {
             return;
         }
         try {
-            await connect();
+            await walletAdapter.connect();
         } catch {
             // User can reject connection in wallet; no UI error needed here.
         }
-    }, [wallet, setVisible, connect]);
+    }, [wallet, setVisible, walletAdapter]);
 
     if (connected && publicKey) {
         return (
@@ -32,7 +33,7 @@ export function WalletButton() {
                 <Button type="button" size="sm" variant="secondary" onClick={() => setVisible(true)}>
                     {truncateAddress(publicKey.toBase58())}
                 </Button>
-                <Button type="button" size="sm" variant="secondary" onClick={() => void disconnect()}>
+                <Button type="button" size="sm" variant="secondary" onClick={() => void walletAdapter.disconnect()}>
                     Disconnect
                 </Button>
             </div>

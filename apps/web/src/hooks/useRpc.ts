@@ -2,6 +2,7 @@
 
 import { createSolanaRpc, createSolanaRpcSubscriptions } from '@solana/kit';
 import { useMemo } from 'react';
+
 import { useRpcContext } from '@/contexts/RpcContext';
 
 function wsUrlFromHttp(httpUrl: string): string {

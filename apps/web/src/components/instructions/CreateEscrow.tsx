@@ -50,7 +50,12 @@ export function CreateEscrow() {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form
+            onSubmit={e => {
+                void handleSubmit(e);
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
             <FormField
                 label="Admin Address"
                 value={account?.address ?? ''}

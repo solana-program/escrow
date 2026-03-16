@@ -51,7 +51,12 @@ export function UpdateAdmin() {
     };
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <form
+            onSubmit={e => {
+                void handleSubmit(e);
+            }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
+        >
             <div>
                 <Badge variant="info">Current and new admin must both sign. This form uses your wallet for both.</Badge>
             </div>

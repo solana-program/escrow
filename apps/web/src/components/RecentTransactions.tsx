@@ -124,7 +124,7 @@ export function RecentTransactions() {
                                 </div>
                                 {tx.values && (
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                        {Object.entries(tx.values).map(([key, value]) => (
+                                        {Object.entries(tx.values as Record<string, string>).map(([key, value]) => (
                                             <span
                                                 key={`${tx.id}-${key}`}
                                                 style={{
