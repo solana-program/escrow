@@ -3,7 +3,8 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 const STORAGE_KEY = 'escrow-rpc-url';
-const DEFAULT_RPC = 'https://api.devnet.solana.com';
+const FALLBACK_RPC = 'https://api.devnet.solana.com';
+const DEFAULT_RPC = process.env.NEXT_PUBLIC_RPC_URL ?? FALLBACK_RPC;
 
 export const RPC_PRESETS = [
     { label: 'Devnet', url: 'https://api.devnet.solana.com' },
@@ -20,15 +21,17 @@ interface RpcContextType {
 const RpcContext = createContext<RpcContextType | null>(null);
 
 export function RpcProvider({ children }: { children: React.ReactNode }) {
-    const [rpcUrl, setRpcUrlState] = useState<string>(() => {
-        if (typeof window === 'undefined') {
-            return process.env.NEXT_PUBLIC_RPC_URL ?? DEFAULT_RPC;
+    const [rpcUrl, setRpcUrlState] = useState<string>(DEFAULT_RPC);
+
+    useEffect(() => {
+        const storedRpcUrl = window.localStorage.getItem(STORAGE_KEY);
+        if (storedRpcUrl) {
+            setRpcUrlState(storedRpcUrl);
         }
-        return localStorage.getItem(STORAGE_KEY) ?? process.env.NEXT_PUBLIC_RPC_URL ?? DEFAULT_RPC;
-    });
+    }, []);
 
     const setRpcUrl = useCallback((url: string) => {
-        localStorage.setItem(STORAGE_KEY, url);
+        window.localStorage.setItem(STORAGE_KEY, url);
         setRpcUrlState(url);
     }, []);
 
