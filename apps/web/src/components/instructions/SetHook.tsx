@@ -6,6 +6,7 @@ import { getSetHookInstructionAsync } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress } from '@/lib/validation';
 import { FormField, SendButton } from './shared';
@@ -14,6 +15,7 @@ export function SetHook() {
     const { createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, rememberEscrow } = useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [hookProgram, setHookProgram] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
@@ -34,12 +36,15 @@ export function SetHook() {
             return;
         }
 
-        const ix = await getSetHookInstructionAsync({
-            admin: signer,
-            escrow: escrow as Address,
-            hookProgram: hookProgram as Address,
-            payer: signer,
-        });
+        const ix = await getSetHookInstructionAsync(
+            {
+                admin: signer,
+                escrow: escrow as Address,
+                hookProgram: hookProgram as Address,
+                payer: signer,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Set Hook',
             values: { escrow, hookProgram },

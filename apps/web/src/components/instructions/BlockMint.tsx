@@ -6,6 +6,7 @@ import { getBlockMintInstructionAsync } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress, validateOptionalAddress } from '@/lib/validation';
 import { FormField, SendButton } from './shared';
@@ -14,6 +15,7 @@ export function BlockMint() {
     const { account, createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, defaultMint, rememberEscrow, rememberMint } = useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [mint, setMint] = useState('');
     const [rentRecipient, setRentRecipient] = useState('');
@@ -36,12 +38,15 @@ export function BlockMint() {
             return;
         }
 
-        const ix = await getBlockMintInstructionAsync({
-            admin: signer,
-            escrow: escrow as Address,
-            mint: mint as Address,
-            rentRecipient: (rentRecipient || signer.address) as Address,
-        });
+        const ix = await getBlockMintInstructionAsync(
+            {
+                admin: signer,
+                escrow: escrow as Address,
+                mint: mint as Address,
+                rentRecipient: (rentRecipient || signer.address) as Address,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Block Mint',
             values: { escrow, mint, rentRecipient: rentRecipient || account?.address || '' },

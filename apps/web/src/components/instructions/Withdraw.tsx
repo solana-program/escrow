@@ -6,6 +6,7 @@ import { getWithdrawInstructionAsync } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress, validateOptionalAddress } from '@/lib/validation';
 import { FormField, SendButton } from './shared';
@@ -15,6 +16,7 @@ export function Withdraw() {
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, defaultMint, defaultReceipt, rememberEscrow, rememberMint, rememberReceipt } =
         useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [mint, setMint] = useState('');
     const [receipt, setReceipt] = useState('');
@@ -39,13 +41,16 @@ export function Withdraw() {
             return;
         }
 
-        const ix = await getWithdrawInstructionAsync({
-            withdrawer: signer,
-            escrow: escrow as Address,
-            mint: mint as Address,
-            receipt: receipt as Address,
-            rentRecipient: (rentRecipient || signer.address) as Address,
-        });
+        const ix = await getWithdrawInstructionAsync(
+            {
+                withdrawer: signer,
+                escrow: escrow as Address,
+                mint: mint as Address,
+                receipt: receipt as Address,
+                rentRecipient: (rentRecipient || signer.address) as Address,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Withdraw',
             values: { escrow, mint, receipt, rentRecipient: rentRecipient || account?.address || '' },

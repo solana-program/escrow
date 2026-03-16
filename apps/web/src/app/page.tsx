@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Button } from '@solana/design-system/button';
 import { WalletButton } from '@/components/WalletButton';
 import { RpcBadge } from '@/components/RpcBadge';
+import { ProgramBadge } from '@/components/ProgramBadge';
 import { QuickDefaults } from '@/components/QuickDefaults';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { CreateEscrow } from '@/components/instructions/CreateEscrow';
@@ -99,6 +100,7 @@ export default function HomePage() {
                         Escrow Program
                     </span>
                     <RpcBadge />
+                    <ProgramBadge />
                 </div>
                 <WalletButton />
             </header>

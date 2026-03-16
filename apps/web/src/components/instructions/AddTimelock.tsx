@@ -6,6 +6,7 @@ import { getAddTimelockInstructionAsync } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress, validatePositiveInteger } from '@/lib/validation';
 import { FormField, SendButton } from './shared';
@@ -14,6 +15,7 @@ export function AddTimelock() {
     const { createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, rememberEscrow } = useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [lockDuration, setLockDuration] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
@@ -34,12 +36,15 @@ export function AddTimelock() {
             return;
         }
 
-        const ix = await getAddTimelockInstructionAsync({
-            admin: signer,
-            escrow: escrow as Address,
-            lockDuration: BigInt(lockDuration),
-            payer: signer,
-        });
+        const ix = await getAddTimelockInstructionAsync(
+            {
+                admin: signer,
+                escrow: escrow as Address,
+                lockDuration: BigInt(lockDuration),
+                payer: signer,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Add Timelock',
             values: { escrow, lockDuration },

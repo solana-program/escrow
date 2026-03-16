@@ -6,6 +6,7 @@ import { findExtensionsPda, getBlockTokenExtensionInstructionAsync } from '@sola
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress } from '@/lib/validation';
 import { FormField, SelectField, SendButton } from './shared';
@@ -24,6 +25,7 @@ export function BlockTokenExtension() {
     const { createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, rememberEscrow } = useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [extensionType, setExtensionType] = useState('5');
     const [formError, setFormError] = useState<string | null>(null);
@@ -41,14 +43,20 @@ export function BlockTokenExtension() {
             return;
         }
 
-        const [, extensionsBump] = await findExtensionsPda({ escrow: escrow as Address });
-        const ix = await getBlockTokenExtensionInstructionAsync({
-            admin: signer,
-            escrow: escrow as Address,
-            blockedExtension: Number(extensionType),
-            extensionsBump,
-            payer: signer,
-        });
+        const [, extensionsBump] = await findExtensionsPda(
+            { escrow: escrow as Address },
+            { programAddress: programId as Address },
+        );
+        const ix = await getBlockTokenExtensionInstructionAsync(
+            {
+                admin: signer,
+                escrow: escrow as Address,
+                blockedExtension: Number(extensionType),
+                extensionsBump,
+                payer: signer,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Block Token Extension',
             values: { escrow },

@@ -6,6 +6,7 @@ import { findEscrowPda, getCreatesEscrowInstructionAsync } from '@solana/escrow-
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { FormField, SendButton } from './shared';
 
@@ -13,6 +14,7 @@ export function CreateEscrow() {
     const { account, createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { rememberEscrow } = useSavedValues();
+    const { programId } = useProgramContext();
     const [generatedSeed, setGeneratedSeed] = useState('');
     const [generatedEscrow, setGeneratedEscrow] = useState('');
 
@@ -24,14 +26,20 @@ export function CreateEscrow() {
 
         const escrowSeed = await generateKeyPairSigner();
         setGeneratedSeed(escrowSeed.address);
-        const [escrow] = await findEscrowPda({ escrowSeed: escrowSeed.address as Address });
+        const [escrow] = await findEscrowPda(
+            { escrowSeed: escrowSeed.address as Address },
+            { programAddress: programId as Address },
+        );
         setGeneratedEscrow(escrow);
 
-        const ix = await getCreatesEscrowInstructionAsync({
-            admin: signer,
-            escrowSeed,
-            payer: signer,
-        });
+        const ix = await getCreatesEscrowInstructionAsync(
+            {
+                admin: signer,
+                escrowSeed,
+                payer: signer,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Create Escrow',
             values: { escrow },

@@ -6,6 +6,7 @@ import { findReceiptPda, getDepositInstructionAsync } from '@solana/escrow-progr
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress, validatePositiveInteger } from '@/lib/validation';
 import { FormField, SendButton } from './shared';
@@ -14,6 +15,7 @@ export function Deposit() {
     const { createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, defaultMint, rememberEscrow, rememberMint, rememberReceipt } = useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [mint, setMint] = useState('');
     const [amount, setAmount] = useState('');
@@ -41,22 +43,28 @@ export function Deposit() {
         const receiptSeed = await generateKeyPairSigner();
         setGeneratedSeed(receiptSeed.address);
         const signerAddress = signer.address as Address;
-        const [receipt] = await findReceiptPda({
-            escrow: escrow as Address,
-            depositor: signerAddress,
-            mint: mint as Address,
-            receiptSeed: receiptSeed.address as Address,
-        });
+        const [receipt] = await findReceiptPda(
+            {
+                escrow: escrow as Address,
+                depositor: signerAddress,
+                mint: mint as Address,
+                receiptSeed: receiptSeed.address as Address,
+            },
+            { programAddress: programId as Address },
+        );
         setGeneratedReceipt(receipt);
 
-        const ix = await getDepositInstructionAsync({
-            depositor: signer,
-            escrow: escrow as Address,
-            mint: mint as Address,
-            amount: BigInt(amount),
-            receiptSeed,
-            payer: signer,
-        });
+        const ix = await getDepositInstructionAsync(
+            {
+                depositor: signer,
+                escrow: escrow as Address,
+                mint: mint as Address,
+                amount: BigInt(amount),
+                receiptSeed,
+                payer: signer,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Deposit',
             values: { escrow, mint, receipt, amount },

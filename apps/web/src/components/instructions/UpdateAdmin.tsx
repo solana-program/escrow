@@ -7,6 +7,7 @@ import { getUpdateAdminInstruction } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
+import { useProgramContext } from '@/contexts/ProgramContext';
 import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress } from '@/lib/validation';
 import { FormField, SendButton } from './shared';
@@ -15,6 +16,7 @@ export function UpdateAdmin() {
     const { createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, rememberEscrow } = useSavedValues();
+    const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
     const [formError, setFormError] = useState<string | null>(null);
 
@@ -31,11 +33,14 @@ export function UpdateAdmin() {
             return;
         }
 
-        const ix = getUpdateAdminInstruction({
-            admin: signer,
-            newAdmin: signer,
-            escrow: escrow as Address,
-        });
+        const ix = getUpdateAdminInstruction(
+            {
+                admin: signer,
+                newAdmin: signer,
+                escrow: escrow as Address,
+            },
+            { programAddress: programId as Address },
+        );
         const txSignature = await send([ix], {
             action: 'Update Admin',
             values: { escrow },
