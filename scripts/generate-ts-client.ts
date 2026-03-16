@@ -16,14 +16,7 @@ const idlDir = path.join(projectRoot, 'idl');
 const escrowIdl = JSON.parse(fs.readFileSync(path.join(idlDir, 'escrow_program.json'), 'utf-8')) as AnchorIdl;
 const typescriptClientsDir = path.join(__dirname, '..', 'clients', 'typescript');
 
-const escrowCodama = createEscrowCodamaBuilder(escrowIdl)
-    .appendAccountDiscriminator()
-    .appendAccountVersion()
-    .appendPdaDerivers()
-    .setInstructionAccountDefaultValues()
-    .updateInstructionBumps()
-    .removeEmitInstruction()
-    .build();
+const escrowCodama = createEscrowCodamaBuilder(escrowIdl).appendAccountVersion().build();
 
 const configPreserver = preserveConfigFiles(typescriptClientsDir);
 
