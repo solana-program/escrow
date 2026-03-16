@@ -15,6 +15,13 @@ use crate::{assert_no_padding, require_account_len, validate_discriminator};
 /// # PDA Seeds
 /// `[b"receipt", escrow.as_ref(), depositor.as_ref(), mint.as_ref(), receipt_seed.as_ref()]`
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
+#[codama(field("discriminator", number(u8), default_value = 2))]
+#[codama(discriminator(field = "discriminator"))]
+#[codama(seed(type = string(utf8), value = "receipt"))]
+#[codama(seed(name = "escrow", type = public_key))]
+#[codama(seed(name = "depositor", type = public_key))]
+#[codama(seed(name = "mint", type = public_key))]
+#[codama(seed(name = "receiptSeed", type = public_key))]
 #[repr(C)]
 pub struct Receipt {
     pub bump: u8,
