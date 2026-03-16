@@ -1,0 +1,38 @@
+{
+  "name": "@solana/escrow-program-web",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "prebuild": "cd ../.. && pnpm tsx scripts/generate-ts-client.ts && pnpm --filter @solana/escrow-program-client build",
+    "build": "next build",
+    "dev": "next dev",
+    "start": "next start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.1.0",
+    "@solana-program/system": "^0.12.0",
+    "@solana-program/token": "^0.12.0",
+    "@solana-program/token-2022": "^0.9.0",
+    "@solana/design-system": "^1.0.0",
+    "@solana/escrow-program-client": "workspace:*",
+    "@solana/kit": "^6.3.1",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.37",
+    "@solana/web3.js": "^1.98.4",
+    "clsx": "^2.1.1",
+    "motion": "^12.26.0",
+    "next": "^16.1.6",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.1",
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "tailwindcss": "^4.2.1",
+    "typescript": "^5.9.3"
+  }
+}

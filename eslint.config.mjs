@@ -10,6 +10,7 @@ export default [
             '**/generated/**',
             'clients/typescript/src/generated/**',
             'eslint.config.mjs',
+            '**/*.mjs',
         ],
     },
 ];

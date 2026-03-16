@@ -1,0 +1,26 @@
+# Rust build artifacts
+target/
+**/target/
+
+# Dependencies (reinstalled by Vercel)
+node_modules/
+**/node_modules/
+
+# Generated files (rebuilt during Vercel build)
+**/dist/
+**/generated/
+
+# Not needed for frontend build
+program/
+clients/rust/
+tests/
+examples/
+.github/
+
+# Local / dev
+.env*.local
+.DS_Store
+keypairs/
+.keypairs/
+.cus/
+test-ledger/

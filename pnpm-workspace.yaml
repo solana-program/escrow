@@ -1,3 +1,4 @@
 packages:
   - 'clients/typescript'
+  - 'apps/web'
   - 'examples/typescript/*'

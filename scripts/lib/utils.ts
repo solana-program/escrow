@@ -8,7 +8,7 @@ interface ConfigPreserver {
 /**
  * Preserves config files (Cargo.toml, package.json, etc.) during client generation.
  */
-export function preserveConfigFiles(typescriptClientsDir: string, rustClientsDir: string): ConfigPreserver {
+export function preserveConfigFiles(typescriptClientsDir: string, rustClientsDir?: string): ConfigPreserver {
     const filesToPreserve = ['package.json', 'tsconfig.json', '.npmignore', 'pnpm-lock.yaml', 'Cargo.toml'];
     const preservedFiles = new Map<string, string>();
 
@@ -22,10 +22,10 @@ export function preserveConfigFiles(typescriptClientsDir: string, rustClientsDir
         }
     });
 
-    const rustCargoPath = path.join(rustClientsDir, 'Cargo.toml');
-    const rustCargoTempPath = path.join(rustClientsDir, 'Cargo.toml.temp');
+    const rustCargoPath = rustClientsDir ? path.join(rustClientsDir, 'Cargo.toml') : null;
+    const rustCargoTempPath = rustClientsDir ? path.join(rustClientsDir, 'Cargo.toml.temp') : null;
 
-    if (fs.existsSync(rustCargoPath)) {
+    if (rustCargoPath && rustCargoTempPath && fs.existsSync(rustCargoPath)) {
         fs.copyFileSync(rustCargoPath, rustCargoTempPath);
         preservedFiles.set('rust_cargo', rustCargoTempPath);
     }
@@ -35,7 +35,7 @@ export function preserveConfigFiles(typescriptClientsDir: string, rustClientsDir
             preservedFiles.forEach((tempPath, filename) => {
                 try {
                     if (filename === 'rust_cargo') {
-                        const filePath = path.join(rustClientsDir, 'Cargo.toml');
+                        const filePath = path.join(rustClientsDir!, 'Cargo.toml');
                         if (fs.existsSync(tempPath)) {
                             fs.copyFileSync(tempPath, filePath);
                             fs.unlinkSync(tempPath);
