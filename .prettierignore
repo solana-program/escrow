@@ -8,6 +8,9 @@ clients/typescript/src/generated/
 dist/
 build/
 target/
+**/.next/
+**/playwright-report/
+**/test-results/
 
 # Dependencies
 node_modules/
