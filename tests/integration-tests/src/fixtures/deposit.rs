@@ -5,6 +5,7 @@ use solana_sdk::{
     pubkey::Pubkey,
     signature::{Keypair, Signer},
 };
+use spl_token_2022::extension::ExtensionType;
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use spl_token_interface::ID as TOKEN_PROGRAM_ID;
 
@@ -85,11 +86,12 @@ pub struct DepositSetupBuilder<'a> {
     ctx: &'a mut TestContext,
     token_program: Pubkey,
     hook_program: Option<Pubkey>,
+    mint_extension: Option<ExtensionType>,
 }
 
 impl<'a> DepositSetupBuilder<'a> {
     fn new(ctx: &'a mut TestContext) -> Self {
-        Self { ctx, token_program: TOKEN_PROGRAM_ID, hook_program: None }
+        Self { ctx, token_program: TOKEN_PROGRAM_ID, hook_program: None, mint_extension: None }
     }
 
     pub fn token_2022(mut self) -> Self {
@@ -104,6 +106,12 @@ impl<'a> DepositSetupBuilder<'a> {
 
     pub fn hook_program(mut self, program: Pubkey) -> Self {
         self.hook_program = Some(program);
+        self
+    }
+
+    pub fn mint_extension(mut self, extension: ExtensionType) -> Self {
+        self.mint_extension = Some(extension);
+        self.token_program = TOKEN_2022_PROGRAM_ID;
         self
     }
 
@@ -140,12 +148,19 @@ impl<'a> DepositSetupBuilder<'a> {
         let token_program = self.token_program;
         let (vault, depositor_token_account);
 
-        if token_program == TOKEN_2022_PROGRAM_ID {
-            self.ctx.create_token_2022_mint(&mint, &self.ctx.payer.pubkey(), 6);
-            vault = self.ctx.create_token_2022_account(&escrow_pda, &mint.pubkey());
-        } else {
-            self.ctx.create_mint(&mint, &self.ctx.payer.pubkey(), 6);
-            vault = self.ctx.create_token_account(&escrow_pda, &mint.pubkey());
+        match self.mint_extension {
+            Some(extension) => {
+                self.ctx.create_token_2022_mint_with_extension(&mint, &self.ctx.payer.pubkey(), 6, extension);
+                vault = self.ctx.create_token_2022_account(&escrow_pda, &mint.pubkey());
+            }
+            None if token_program == TOKEN_2022_PROGRAM_ID => {
+                self.ctx.create_token_2022_mint(&mint, &self.ctx.payer.pubkey(), 6);
+                vault = self.ctx.create_token_2022_account(&escrow_pda, &mint.pubkey());
+            }
+            None => {
+                self.ctx.create_mint(&mint, &self.ctx.payer.pubkey(), 6);
+                vault = self.ctx.create_token_account(&escrow_pda, &mint.pubkey());
+            }
         }
 
         let (allowed_mint_pda, allowed_mint_bump) = find_allowed_mint_pda(&escrow_pda, &mint.pubkey());

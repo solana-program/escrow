@@ -1,6 +1,6 @@
 //! Token2022 extension validation utilities.
 
-use alloc::vec::Vec;
+use alloc::vec;
 use pinocchio::{account::AccountView, error::ProgramError};
 use pinocchio_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use spl_token_2022::{
@@ -19,6 +19,8 @@ use crate::{errors::EscrowProgramError, utils::TlvReader};
 /// - `PermanentDelegate`: Authority can transfer/burn tokens from ANY account
 /// - `NonTransferable`: Tokens cannot be transferred
 /// - `Pausable`: Authority can pause all transfers
+/// - `TransferFeeConfig`: Transfer fees break escrow accounting invariants
+/// - `MintCloseAuthority`: Mint can be closed and recreated with unsafe configuration
 ///
 /// # Escrow-Specific Blocklist
 /// If `extensions` account is provided and contains a `BlockTokenExtensions` extension,
@@ -46,12 +48,14 @@ pub fn validate_mint_extensions(mint: &AccountView, extensions: &AccountView) ->
     let extension_types = mint_state.get_extension_types()?;
 
     // Build combined blocklist: global + escrow-specific (as u16 values)
-    let mut blocked_types_u16 = Vec::new();
-
     // Add global blocklist (convert ExtensionType enum to u16)
-    blocked_types_u16.push(ExtensionType::PermanentDelegate as u16);
-    blocked_types_u16.push(ExtensionType::NonTransferable as u16);
-    blocked_types_u16.push(ExtensionType::Pausable as u16);
+    let mut blocked_types_u16 = vec![
+        ExtensionType::PermanentDelegate as u16,
+        ExtensionType::NonTransferable as u16,
+        ExtensionType::Pausable as u16,
+        ExtensionType::TransferFeeConfig as u16,
+        ExtensionType::MintCloseAuthority as u16,
+    ];
 
     // Add escrow-specific blocklist if extensions account has data
     if extensions.data_len() > 0 {
@@ -77,6 +81,12 @@ pub fn validate_mint_extensions(mint: &AccountView, extensions: &AccountView) ->
                 }
                 ExtensionType::Pausable => {
                     return Err(EscrowProgramError::PausableNotAllowed.into());
+                }
+                ExtensionType::TransferFeeConfig => {
+                    return Err(EscrowProgramError::MintNotAllowed.into());
+                }
+                ExtensionType::MintCloseAuthority => {
+                    return Err(EscrowProgramError::MintNotAllowed.into());
                 }
                 _ => {
                     // Escrow-specific blocked extension

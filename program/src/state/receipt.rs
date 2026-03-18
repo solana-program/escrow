@@ -15,7 +15,7 @@ use crate::{assert_no_padding, require_account_len, validate_discriminator};
 /// # PDA Seeds
 /// `[b"receipt", escrow.as_ref(), depositor.as_ref(), mint.as_ref(), receipt_seed.as_ref()]`
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
-#[codama(field("discriminator", number(u8), default_value = 2))]
+#[codama(field("discriminator", number(u8), default_value = 3))]
 #[codama(discriminator(field = "discriminator"))]
 #[codama(seed(type = string(utf8), value = "receipt"))]
 #[codama(seed(name = "escrow", type = public_key))]
@@ -56,6 +56,9 @@ impl AccountParse for Receipt {
     fn parse_from_bytes(data: &[u8]) -> Result<Self, ProgramError> {
         require_account_len!(data, Self::LEN);
         validate_discriminator!(data, Self::DISCRIMINATOR);
+        if data[1] != Self::VERSION {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         // Skip discriminator (byte 0) and version (byte 1)
         let data = &data[2..];
@@ -266,5 +269,15 @@ mod tests {
         bytes[0] = 99; // wrong discriminator
         let result = Receipt::parse_from_bytes(&bytes);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_receipt_parse_from_bytes_wrong_version() {
+        let receipt = create_test_receipt();
+        let mut bytes = receipt.to_bytes();
+        bytes[1] = Receipt::VERSION.wrapping_add(1);
+
+        let result = Receipt::parse_from_bytes(&bytes);
+        assert_eq!(result, Err(ProgramError::InvalidAccountData));
     }
 }

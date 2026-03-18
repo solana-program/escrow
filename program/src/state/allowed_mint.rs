@@ -1,7 +1,7 @@
 use alloc::vec;
 use alloc::vec::Vec;
 use codama::CodamaAccount;
-use pinocchio::{cpi::Seed, error::ProgramError, Address};
+use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address};
 
 use crate::assert_no_padding;
 use crate::traits::{
@@ -17,7 +17,7 @@ use crate::traits::{
 /// # PDA Seeds
 /// `[b"allowed_mint", escrow.as_ref(), mint.as_ref()]`
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
-#[codama(field("discriminator", number(u8), default_value = 3))]
+#[codama(field("discriminator", number(u8), default_value = 4))]
 #[codama(discriminator(field = "discriminator"))]
 #[codama(seed(type = string(utf8), value = "allowed_mint"))]
 #[codama(seed(name = "escrow", type = public_key))]
@@ -57,8 +57,17 @@ impl AllowedMint {
     }
 
     #[inline(always)]
-    pub fn from_account(data: &[u8]) -> Result<&Self, ProgramError> {
-        Self::from_bytes(data)
+    pub fn from_account<'a>(
+        data: &'a [u8],
+        account: &AccountView,
+        program_id: &Address,
+        escrow: &Address,
+        mint: &Address,
+    ) -> Result<&'a Self, ProgramError> {
+        let state = Self::from_bytes(data)?;
+        let pda = AllowedMintPda::new(escrow, mint);
+        pda.validate_pda(account, program_id, state.bump)?;
+        Ok(state)
     }
 }
 

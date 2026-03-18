@@ -98,7 +98,7 @@ fn test_set_hook_escrow_not_owned_by_program() {
 }
 
 #[test]
-fn test_set_hook_duplicate_extension() {
+fn test_set_hook_updates_existing_extension() {
     let mut ctx = TestContext::new();
 
     let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
@@ -107,14 +107,21 @@ fn test_set_hook_duplicate_extension() {
     escrow_ix.send_expect_success(&mut ctx);
 
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
-    let hook_program = Pubkey::new_unique();
+    let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
+    let first_hook_program = Pubkey::new_unique();
 
-    let first_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), hook_program);
+    let first_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), first_hook_program);
     first_ix.send_expect_success(&mut ctx);
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_hook_extension(&ctx, &extensions_pda, &first_hook_program);
 
-    let second_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin, Pubkey::new_unique());
-    let error = second_ix.send_expect_error(&mut ctx);
-    assert_instruction_error(error, InstructionError::AccountAlreadyInitialized);
+    let second_hook_program = Pubkey::new_unique();
+    let second_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin, second_hook_program);
+    second_ix.send_expect_success(&mut ctx);
+
+    // Updating hook should replace value in place without increasing count.
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_hook_extension(&ctx, &extensions_pda, &second_hook_program);
 }
 
 // ============================================================================

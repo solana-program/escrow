@@ -51,7 +51,7 @@ impl HookData {
     /// # Arguments
     /// * `hook_point` - The hook point discriminator
     /// * `remaining_accounts` - Remaining accounts slice: [hook_program, extra_accounts...]
-    /// * `core_accounts` - Core accounts to pass to hook (escrow, actor, mint, receipt, vault)
+    /// * `core_accounts` - Core accounts to pass to hook (escrow, mint, receipt)
     ///
     /// # Returns
     /// * `Ok(())` if hook succeeds
@@ -65,6 +65,10 @@ impl HookData {
         self.validate(remaining_accounts)?;
 
         let extra_accounts = remaining_accounts.get(1..).unwrap_or(&[]);
+        if extra_accounts.iter().any(|acc| acc.is_signer()) {
+            return Err(EscrowProgramError::HookRejected.into());
+        }
+
         let all_accounts: Vec<&AccountView> = core_accounts.iter().copied().chain(extra_accounts.iter()).collect();
 
         // Build instruction accounts - ALL accounts are read-only

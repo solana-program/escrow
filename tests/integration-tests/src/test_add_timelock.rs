@@ -95,7 +95,7 @@ fn test_add_timelock_escrow_not_owned_by_program() {
 }
 
 #[test]
-fn test_add_timelock_duplicate_extension() {
+fn test_add_timelock_updates_existing_extension() {
     let mut ctx = TestContext::new();
 
     let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
@@ -104,13 +104,19 @@ fn test_add_timelock_duplicate_extension() {
     escrow_ix.send_expect_success(&mut ctx);
 
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
 
     let first_ix = AddTimelockFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), 3600);
     first_ix.send_expect_success(&mut ctx);
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_timelock_extension(&ctx, &extensions_pda, 3600);
 
     let second_ix = AddTimelockFixture::build_with_escrow(&mut ctx, escrow_pda, admin, 7200);
-    let error = second_ix.send_expect_error(&mut ctx);
-    assert_instruction_error(error, InstructionError::AccountAlreadyInitialized);
+    second_ix.send_expect_success(&mut ctx);
+
+    // Updating timelock should replace value in place without increasing count.
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_timelock_extension(&ctx, &extensions_pda, 7200);
 }
 
 // ============================================================================

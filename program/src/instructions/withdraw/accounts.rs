@@ -4,8 +4,8 @@ use crate::{
     traits::InstructionAccounts,
     utils::{
         validate_associated_token_account, verify_current_program, verify_current_program_account,
-        verify_event_authority, verify_readonly, verify_signer, verify_system_program, verify_token_program,
-        verify_writable,
+        verify_event_authority, verify_owned_by, verify_readonly, verify_signer, verify_system_program,
+        verify_token_program, verify_writable,
     },
 };
 
@@ -74,6 +74,7 @@ impl<'a> TryFrom<&'a [AccountView]> for WithdrawAccounts<'a> {
 
         // 4. Validate program IDs
         verify_token_program(token_program)?;
+        verify_owned_by(mint, token_program.address())?;
         verify_system_program(system_program)?;
         verify_current_program(escrow_program)?;
         verify_event_authority(event_authority)?;

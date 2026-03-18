@@ -29,6 +29,9 @@ pub trait AccountDeserialize: AccountSize {
     fn from_bytes(data: &[u8]) -> Result<&Self, ProgramError> {
         require_len!(data, Self::LEN);
         validate_discriminator!(data, Self::DISCRIMINATOR);
+        if data[1] != Self::VERSION {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         // Skip discriminator (byte 0) and version (byte 1)
         unsafe { Self::from_bytes_unchecked(&data[2..]) }
@@ -52,6 +55,9 @@ pub trait AccountDeserialize: AccountSize {
     fn from_bytes_mut(data: &mut [u8]) -> Result<&mut Self, ProgramError> {
         require_len!(data, Self::LEN);
         validate_discriminator!(data, Self::DISCRIMINATOR);
+        if data[1] != Self::VERSION {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         // Skip discriminator (byte 0) and version (byte 1)
         unsafe { Self::from_bytes_mut_unchecked(&mut data[2..]) }
@@ -74,10 +80,10 @@ pub trait AccountDeserialize: AccountSize {
 /// Account discriminator values for this program
 #[repr(u8)]
 pub enum EscrowAccountDiscriminators {
-    EscrowDiscriminator = 0,
-    EscrowExtensionsDiscriminator = 1,
-    ReceiptDiscriminator = 2,
-    AllowedMintDiscriminator = 3,
+    EscrowDiscriminator = 1,
+    EscrowExtensionsDiscriminator = 2,
+    ReceiptDiscriminator = 3,
+    AllowedMintDiscriminator = 4,
 }
 
 /// Manual account deserialization (non-zero-copy)
@@ -179,6 +185,30 @@ mod tests {
     }
 
     #[test]
+    fn test_from_bytes_wrong_version() {
+        let escrow_seed = Address::new_from_array([1u8; 32]);
+        let admin = Address::new_from_array([2u8; 32]);
+        let escrow = Escrow::new(100, escrow_seed, admin);
+        let mut bytes = escrow.to_bytes();
+        bytes[1] = Escrow::VERSION.wrapping_add(1);
+
+        let result = Escrow::from_bytes(&bytes);
+        assert_eq!(result, Err(ProgramError::InvalidAccountData));
+    }
+
+    #[test]
+    fn test_from_bytes_mut_wrong_version() {
+        let escrow_seed = Address::new_from_array([1u8; 32]);
+        let admin = Address::new_from_array([2u8; 32]);
+        let escrow = Escrow::new(100, escrow_seed, admin);
+        let mut bytes = escrow.to_bytes();
+        bytes[1] = Escrow::VERSION.wrapping_add(1);
+
+        let result = Escrow::from_bytes_mut(&mut bytes);
+        assert_eq!(result, Err(ProgramError::InvalidAccountData));
+    }
+
+    #[test]
     fn test_write_to_slice_exact_size() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
@@ -202,5 +232,13 @@ mod tests {
         // Byte 0 = discriminator, Byte 1 = version
         assert_eq!(bytes[0], Escrow::DISCRIMINATOR);
         assert_eq!(bytes[1], Escrow::VERSION);
+    }
+
+    #[test]
+    fn test_account_discriminators_are_non_zero_and_stable() {
+        assert_eq!(EscrowAccountDiscriminators::EscrowDiscriminator as u8, 1);
+        assert_eq!(EscrowAccountDiscriminators::EscrowExtensionsDiscriminator as u8, 2);
+        assert_eq!(EscrowAccountDiscriminators::ReceiptDiscriminator as u8, 3);
+        assert_eq!(EscrowAccountDiscriminators::AllowedMintDiscriminator as u8, 4);
     }
 }

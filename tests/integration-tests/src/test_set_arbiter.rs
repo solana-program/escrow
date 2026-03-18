@@ -106,7 +106,7 @@ fn test_set_arbiter_escrow_not_owned_by_program() {
 }
 
 #[test]
-fn test_set_arbiter_duplicate_extension() {
+fn test_set_arbiter_updates_existing_extension() {
     let mut ctx = TestContext::new();
 
     let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
@@ -115,15 +115,23 @@ fn test_set_arbiter_duplicate_extension() {
     escrow_ix.send_expect_success(&mut ctx);
 
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
-    let arbiter = Keypair::new();
+    let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
+    let first_arbiter = Keypair::new();
+    let first_arbiter_pubkey = first_arbiter.pubkey();
 
-    let first_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), arbiter);
+    let first_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), first_arbiter);
     first_ix.send_expect_success(&mut ctx);
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_arbiter_extension(&ctx, &extensions_pda, &first_arbiter_pubkey);
 
-    // Second attempt should fail — arbiter is immutable
-    let second_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin, Keypair::new());
-    let error = second_ix.send_expect_error(&mut ctx);
-    assert_instruction_error(error, InstructionError::AccountAlreadyInitialized);
+    let second_arbiter = Keypair::new();
+    let second_arbiter_pubkey = second_arbiter.pubkey();
+    let second_ix = SetArbiterFixture::build_with_escrow(&mut ctx, escrow_pda, admin, second_arbiter);
+    second_ix.send_expect_success(&mut ctx);
+
+    // Updating arbiter should replace value in place without increasing count.
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_arbiter_extension(&ctx, &extensions_pda, &second_arbiter_pubkey);
 }
 
 // ============================================================================

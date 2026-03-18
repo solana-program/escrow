@@ -13,11 +13,11 @@ use crate::{
     events::DepositEvent,
     instructions::Deposit,
     state::{
-        get_extensions_from_account, validate_extensions_pda, AllowedMint, AllowedMintPda, Escrow, ExtensionType,
-        HookData, HookPoint, Receipt,
+        get_extensions_from_account, validate_extensions_pda, AllowedMint, Escrow, ExtensionType, HookData, HookPoint,
+        Receipt,
     },
     traits::{AccountSerialize, AccountSize, EventSerialize, ExtensionData, PdaSeeds},
-    utils::{create_pda_account, emit_event, get_mint_decimals},
+    utils::{create_pda_account, emit_event, get_mint_decimals, validate_mint_extensions},
 };
 
 /// Processes the Deposit instruction.
@@ -30,15 +30,16 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let _escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
 
-    // Verify allowed_mint PDA exists and matches expected derivation
+    // Verify allowed_mint account exists and self-validates against escrow + mint PDA derivation
     let allowed_mint_data = ix.accounts.allowed_mint.try_borrow()?;
-    let allowed_mint = AllowedMint::from_account(&allowed_mint_data).map_err(|_| EscrowProgramError::MintNotAllowed)?;
-
-    // Validate that the allowed_mint PDA is derived from the correct escrow + mint
-    let pda_seeds = AllowedMintPda::new(ix.accounts.escrow.address(), ix.accounts.mint.address());
-    pda_seeds
-        .validate_pda(ix.accounts.allowed_mint, program_id, allowed_mint.bump)
-        .map_err(|_| EscrowProgramError::MintNotAllowed)?;
+    let _allowed_mint = AllowedMint::from_account(
+        &allowed_mint_data,
+        ix.accounts.allowed_mint,
+        program_id,
+        ix.accounts.escrow.address(),
+        ix.accounts.mint.address(),
+    )
+    .map_err(|_| EscrowProgramError::MintNotAllowed)?;
 
     // Get current timestamp from Clock sysvar
     let clock = Clock::get()?;
@@ -74,6 +75,10 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
     // Validate extensions PDA
     validate_extensions_pda(ix.accounts.escrow, ix.accounts.extensions, program_id)?;
 
+    // Re-check mint extensions against the current escrow blocklist.
+    // This prevents stale AllowedMint entries from bypassing new blocklist rules.
+    validate_mint_extensions(ix.accounts.mint, ix.accounts.extensions)?;
+
     // Get hook extension if present
     let exts = get_extensions_from_account(ix.accounts.extensions, &[ExtensionType::Hook])?;
     let hook_data = exts[0].as_ref().map(|b| HookData::from_bytes(b)).transpose()?;
@@ -83,7 +88,7 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
         hook.invoke(
             HookPoint::PreDeposit,
             ix.accounts.remaining_accounts,
-            &[ix.accounts.escrow, ix.accounts.depositor, ix.accounts.mint, ix.accounts.receipt],
+            &[ix.accounts.escrow, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
 
@@ -106,7 +111,7 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
         hook.invoke(
             HookPoint::PostDeposit,
             ix.accounts.remaining_accounts,
-            &[ix.accounts.escrow, ix.accounts.depositor, ix.accounts.mint, ix.accounts.receipt],
+            &[ix.accounts.escrow, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
 
