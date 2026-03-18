@@ -17,6 +17,11 @@
 # AI
 .claude/
 
+# Playwright
+**/playwright-report/
+**/test-results/
+**/.playwright-mcp/
+
 # Solana Test Validator
 **/test-ledger
 .runbook-logs/*
