@@ -3,8 +3,8 @@ use pinocchio::{account::AccountView, Address, ProgramResult};
 use crate::{
     events::BlockMintEvent,
     instructions::BlockMint,
-    state::{AllowedMint, AllowedMintPda, Escrow},
-    traits::{EventSerialize, PdaSeeds},
+    state::{AllowedMint, Escrow},
+    traits::EventSerialize,
     utils::{close_pda_account, emit_event},
 };
 
@@ -19,13 +19,15 @@ pub fn process_block_mint(program_id: &Address, accounts: &[AccountView], instru
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
 
-    // Verify allowed_mint exists and is valid
+    // Verify allowed_mint account exists and self-validates against escrow + mint PDA derivation
     let allowed_mint_data = ix.accounts.allowed_mint.try_borrow()?;
-    let allowed_mint = AllowedMint::from_account(&allowed_mint_data)?;
-
-    // Validate that allowed_mint PDA matches the escrow + mint combination
-    let pda_seeds = AllowedMintPda::new(ix.accounts.escrow.address(), ix.accounts.mint.address());
-    pda_seeds.validate_pda(ix.accounts.allowed_mint, program_id, allowed_mint.bump)?;
+    let _allowed_mint = AllowedMint::from_account(
+        &allowed_mint_data,
+        ix.accounts.allowed_mint,
+        program_id,
+        ix.accounts.escrow.address(),
+        ix.accounts.mint.address(),
+    )?;
     drop(allowed_mint_data);
 
     // Close the AllowedMint account and return lamports to rent_recipient

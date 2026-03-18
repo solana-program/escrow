@@ -46,7 +46,7 @@ pub const TLV_HEADER_SIZE: usize = 4;
 /// [discriminator: 1][version: 1][header: 2][TLV extensions: variable]
 /// ```
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
-#[codama(field("discriminator", number(u8), default_value = 1))]
+#[codama(field("discriminator", number(u8), default_value = 2))]
 #[codama(discriminator(field = "discriminator"))]
 #[codama(pda = "extensions")]
 #[codama(seed(type = string(utf8), value = "extensions"))]
@@ -86,6 +86,9 @@ impl EscrowExtensionsHeader {
         require_len!(data, Self::LEN);
 
         validate_discriminator!(data, Self::DISCRIMINATOR);
+        if data[1] != Self::VERSION {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         // Skip discriminator (byte 0) and version (byte 1)
         Ok(Self { bump: data[2], extension_count: data[3] })
@@ -309,6 +312,10 @@ pub fn validate_extensions_pda(escrow: &AccountView, extensions: &AccountView, p
     let expected_bump = extensions_pda.validate_pda_address(extensions, program_id)?;
 
     if extensions.data_len() > 0 {
+        if !extensions.owned_by(program_id) {
+            return Err(ProgramError::InvalidAccountOwner);
+        }
+
         let data = extensions.try_borrow()?;
         let header = EscrowExtensionsHeader::from_bytes(&data)?;
         if header.bump != expected_bump {
@@ -403,6 +410,16 @@ mod tests {
         let parsed = EscrowExtensionsHeader::from_bytes(&bytes).unwrap();
         assert_eq!(parsed.bump, header.bump);
         assert_eq!(parsed.extension_count, header.extension_count);
+    }
+
+    #[test]
+    fn test_header_from_bytes_wrong_version() {
+        let header = EscrowExtensionsHeader::new(100, 2);
+        let mut bytes = header.to_bytes();
+        bytes[1] = EscrowExtensionsHeader::VERSION.wrapping_add(1);
+
+        let result = EscrowExtensionsHeader::from_bytes(&bytes);
+        assert_eq!(result, Err(ProgramError::InvalidAccountData));
     }
 
     #[test]

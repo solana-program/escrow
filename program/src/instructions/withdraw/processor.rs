@@ -1,4 +1,4 @@
-use pinocchio::{account::AccountView, Address, ProgramResult};
+use pinocchio::{account::AccountView, error::ProgramError, Address, ProgramResult};
 use pinocchio_token_2022::instructions::TransferChecked;
 
 use crate::{
@@ -25,7 +25,7 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
     }
 
     // Read and validate receipt
-    let (amount, receipt_seed, mint, deposited_at) = {
+    let (amount, receipt_seed, receipt_mint, deposited_at) = {
         let receipt_data = ix.accounts.receipt.try_borrow()?;
         let receipt = Receipt::from_account(&receipt_data, ix.accounts.receipt, program_id)?;
 
@@ -34,6 +34,11 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
 
         (receipt.amount, receipt.receipt_seed, receipt.mint, receipt.deposited_at)
     };
+
+    // Ensure the mint account matches the receipt's mint to prevent cross-mint withdrawals.
+    if receipt_mint != *ix.accounts.mint.address() {
+        return Err(ProgramError::InvalidAccountData);
+    }
 
     // Validate extensions PDA
     validate_extensions_pda(ix.accounts.escrow, ix.accounts.extensions, program_id)?;
@@ -68,7 +73,7 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
         hook.invoke(
             HookPoint::PreWithdraw,
             remaining_accounts,
-            &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint, ix.accounts.receipt],
+            &[ix.accounts.escrow, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
 
@@ -92,23 +97,23 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
         })?;
     }
 
-    // Close receipt account and return lamports to rent_recipient
-    close_pda_account(ix.accounts.receipt, ix.accounts.rent_recipient)?;
-
-    // Invoke post-withdraw hook if configured (receipt is closed, don't pass it)
+    // Invoke post-withdraw hook if configured (receipt is still open, pass it for context)
     if let Some(ref hook) = hook_data {
         hook.invoke(
             HookPoint::PostWithdraw,
             remaining_accounts,
-            &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint],
+            &[ix.accounts.escrow, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
+
+    // Close receipt account and return lamports to rent_recipient
+    close_pda_account(ix.accounts.receipt, ix.accounts.rent_recipient)?;
 
     // Emit event
     let event = WithdrawEvent::new(
         *ix.accounts.escrow.address(),
         *ix.accounts.withdrawer.address(),
-        mint,
+        receipt_mint,
         receipt_seed,
         amount,
     );

@@ -20,7 +20,7 @@ use crate::traits::{
 /// # PDA Seeds
 /// `[b"escrow", escrow_seed.as_ref()]`
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
-#[codama(field("discriminator", number(u8), default_value = 0))]
+#[codama(field("discriminator", number(u8), default_value = 1))]
 #[codama(discriminator(field = "discriminator"))]
 #[codama(seed(type = string(utf8), value = "escrow"))]
 #[codama(seed(name = "escrowSeed", type = public_key))]

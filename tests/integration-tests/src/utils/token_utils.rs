@@ -8,9 +8,9 @@ use solana_sdk::{
 use spl_associated_token_account::{get_associated_token_address, get_associated_token_address_with_program_id};
 use spl_token_2022::{
     extension::{
-        mint_close_authority::MintCloseAuthority, non_transferable::NonTransferable, pausable::PausableConfig,
-        permanent_delegate::PermanentDelegate, transfer_fee::TransferFeeConfig, BaseStateWithExtensionsMut,
-        ExtensionType, StateWithExtensionsMut,
+        metadata_pointer::MetadataPointer, mint_close_authority::MintCloseAuthority, non_transferable::NonTransferable,
+        pausable::PausableConfig, permanent_delegate::PermanentDelegate, transfer_fee::TransferFeeConfig,
+        BaseStateWithExtensionsMut, ExtensionType, StateWithExtensionsMut,
     },
     state::Mint as Token2022Mint,
     ID as TOKEN_2022_PROGRAM_ID,
@@ -203,6 +203,9 @@ impl TestContext {
             ExtensionType::MintCloseAuthority => {
                 let ext = state.init_extension::<MintCloseAuthority>(true).unwrap();
                 ext.close_authority = COption::Some(*mint_authority).try_into().unwrap();
+            }
+            ExtensionType::MetadataPointer => {
+                state.init_extension::<MetadataPointer>(true).unwrap();
             }
             _ => panic!("Unsupported extension type for test helper"),
         }
