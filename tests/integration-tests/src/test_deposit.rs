@@ -118,7 +118,7 @@ fn test_deposit_wrong_allowed_mint_owner() {
 }
 
 #[test]
-fn test_deposit_fails_when_escrow_is_mutable() {
+fn test_deposit_succeeds_when_escrow_is_mutable() {
     let mut ctx = TestContext::new();
     let setup = AllowMintSetup::new(&mut ctx);
     setup.build_instruction(&ctx).send_expect_success(&mut ctx);
@@ -126,6 +126,8 @@ fn test_deposit_fails_when_escrow_is_mutable() {
     let depositor = ctx.create_funded_keypair();
     let depositor_token_account =
         ctx.create_token_account_with_balance(&depositor.pubkey(), &setup.mint_pubkey, DEFAULT_DEPOSIT_AMOUNT * 10);
+    let initial_depositor_balance = ctx.get_token_balance(&depositor_token_account);
+    let initial_vault_balance = ctx.get_token_balance(&setup.vault);
     let receipt_seed = Keypair::new();
     let (receipt_pda, bump) =
         find_receipt_pda(&setup.escrow_pda, &depositor.pubkey(), &setup.mint_pubkey, &receipt_seed.pubkey());
@@ -146,8 +148,15 @@ fn test_deposit_fails_when_escrow_is_mutable() {
         .amount(DEFAULT_DEPOSIT_AMOUNT)
         .instruction();
 
-    let error = ctx.send_transaction_expect_error(instruction, &[&depositor, &receipt_seed]);
-    assert_escrow_error(error, EscrowError::EscrowNotImmutable);
+    ctx.send_transaction(instruction, &[&depositor, &receipt_seed]).unwrap();
+
+    let final_depositor_balance = ctx.get_token_balance(&depositor_token_account);
+    let final_vault_balance = ctx.get_token_balance(&setup.vault);
+    assert_eq!(final_depositor_balance, initial_depositor_balance - DEFAULT_DEPOSIT_AMOUNT);
+    assert_eq!(final_vault_balance, initial_vault_balance + DEFAULT_DEPOSIT_AMOUNT);
+
+    let receipt_account = ctx.get_account(&receipt_pda).expect("Deposit receipt should exist");
+    assert!(!receipt_account.data.is_empty());
 }
 
 #[test]

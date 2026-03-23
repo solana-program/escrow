@@ -92,7 +92,7 @@ mod tests {
     fn test_derive_address_deterministic() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(0, escrow_seed, admin);
+        let escrow = Escrow::new(0, escrow_seed, admin, false);
 
         let (address1, bump1) = escrow.derive_address(&ID);
         let (address2, bump2) = escrow.derive_address(&ID);
@@ -105,8 +105,8 @@ mod tests {
     fn test_derive_address_different_seeds() {
         let admin = Address::new_from_array([2u8; 32]);
 
-        let escrow1 = Escrow::new(0, Address::new_from_array([1u8; 32]), admin);
-        let escrow2 = Escrow::new(0, Address::new_from_array([3u8; 32]), admin);
+        let escrow1 = Escrow::new(0, Address::new_from_array([1u8; 32]), admin, false);
+        let escrow2 = Escrow::new(0, Address::new_from_array([3u8; 32]), admin, false);
 
         let (address1, _) = escrow1.derive_address(&ID);
         let (address2, _) = escrow2.derive_address(&ID);

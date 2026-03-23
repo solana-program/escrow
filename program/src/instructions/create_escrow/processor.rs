@@ -16,7 +16,7 @@ pub fn process_create_escrow(program_id: &Address, accounts: &[AccountView], ins
     let ix = CreateEscrow::try_from((instruction_data, accounts))?;
 
     // Create Escrow state
-    let escrow = Escrow::new(ix.data.bump, *ix.accounts.escrow_seed.address(), *ix.accounts.admin.address());
+    let escrow = Escrow::new(ix.data.bump, *ix.accounts.escrow_seed.address(), *ix.accounts.admin.address(), false);
 
     // Validate Escrow PDA
     escrow.validate_pda(ix.accounts.escrow, program_id, ix.data.bump)?;

@@ -83,12 +83,7 @@ impl PdaAccount for Escrow {
 
 impl Escrow {
     #[inline(always)]
-    pub fn new(bump: u8, escrow_seed: Address, admin: Address) -> Self {
-        Self { bump, escrow_seed, admin, is_immutable: false }
-    }
-
-    #[inline(always)]
-    pub fn new_with_mutability(bump: u8, escrow_seed: Address, admin: Address, is_immutable: bool) -> Self {
+    pub fn new(bump: u8, escrow_seed: Address, admin: Address, is_immutable: bool) -> Self {
         Self { bump, escrow_seed, admin, is_immutable }
     }
 
@@ -129,7 +124,7 @@ impl Escrow {
 
     #[inline(always)]
     pub fn set_immutable(&self) -> Self {
-        Self::new_with_mutability(self.bump, self.escrow_seed, self.admin, true)
+        Self::new(self.bump, self.escrow_seed, self.admin, true)
     }
 
     /// Execute a CPI with this escrow PDA as signer
@@ -152,7 +147,7 @@ mod tests {
     fn create_test_escrow() -> Escrow {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        Escrow::new_with_mutability(255, escrow_seed, admin, false)
+        Escrow::new(255, escrow_seed, admin, false)
     }
 
     #[test]
@@ -160,7 +155,7 @@ mod tests {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
 
-        let escrow = Escrow::new(200, escrow_seed, admin);
+        let escrow = Escrow::new(200, escrow_seed, admin, false);
 
         assert_eq!(escrow.bump, 200);
         assert_eq!(escrow.escrow_seed, escrow_seed);
@@ -279,19 +274,14 @@ mod tests {
 
     #[test]
     fn test_require_mutable_fails_when_immutable() {
-        let escrow = Escrow::new_with_mutability(
-            1,
-            Address::new_from_array([1u8; 32]),
-            Address::new_from_array([2u8; 32]),
-            true,
-        );
+        let escrow = Escrow::new(1, Address::new_from_array([1u8; 32]), Address::new_from_array([2u8; 32]), true);
         let result = escrow.require_mutable();
         assert_eq!(result, Err(EscrowProgramError::EscrowImmutable.into()));
     }
 
     #[test]
     fn test_require_immutable_fails_when_mutable() {
-        let escrow = Escrow::new(1, Address::new_from_array([1u8; 32]), Address::new_from_array([2u8; 32]));
+        let escrow = Escrow::new(1, Address::new_from_array([1u8; 32]), Address::new_from_array([2u8; 32]), false);
         let result = escrow.require_immutable();
         assert_eq!(result, Err(EscrowProgramError::EscrowNotImmutable.into()));
     }
