@@ -78,7 +78,7 @@ fn test_set_immutable_success() {
 }
 
 #[test]
-fn test_set_immutable_idempotent() {
+fn test_set_immutable_fails_when_already_immutable() {
     let mut ctx = TestContext::new();
     let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
     let admin = escrow_ix.signers[0].insecure_clone();
@@ -93,7 +93,8 @@ fn test_set_immutable_idempotent() {
     ctx.warp_to_slot(2);
 
     let second_ix = SetImmutableFixture::build_with_escrow(&mut ctx, escrow_pda, admin);
-    second_ix.send_expect_success(&mut ctx);
+    let error = second_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, escrow_program_client::errors::EscrowProgramError::EscrowImmutable);
 
     assert_escrow_mutability(&ctx, &escrow_pda, true);
 }

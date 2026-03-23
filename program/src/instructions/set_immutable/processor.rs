@@ -15,19 +15,17 @@ pub fn process_set_immutable(program_id: &Address, accounts: &[AccountView], ins
     let ix = SetImmutable::try_from((instruction_data, accounts))?;
 
     // Read and validate escrow
-    let (updated_escrow, needs_write) = {
+    let updated_escrow = {
         let escrow_data = ix.accounts.escrow.try_borrow()?;
         let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
         escrow.validate_admin(ix.accounts.admin.address())?;
-
-        (escrow.set_immutable(), !escrow.is_immutable)
+        escrow.require_mutable()?;
+        escrow.set_immutable()
     };
 
-    // Write updated escrow only when transitioning mutable -> immutable.
-    if needs_write {
-        let mut escrow_data = ix.accounts.escrow.try_borrow_mut()?;
-        updated_escrow.write_to_slice(&mut escrow_data)?;
-    }
+    // Write updated escrow.
+    let mut escrow_data = ix.accounts.escrow.try_borrow_mut()?;
+    updated_escrow.write_to_slice(&mut escrow_data)?;
 
     // Emit event
     let event = SetImmutableEvent::new(*ix.accounts.escrow.address(), *ix.accounts.admin.address());

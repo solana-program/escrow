@@ -136,7 +136,7 @@ mod tests {
     fn test_from_bytes_mut_modifies_original() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(100, escrow_seed, admin);
+        let escrow = Escrow::new(100, escrow_seed, admin, false);
         let mut bytes = escrow.to_bytes();
 
         {
@@ -152,7 +152,7 @@ mod tests {
     fn test_from_bytes_unchecked_skips_discriminator_and_version() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(100, escrow_seed, admin);
+        let escrow = Escrow::new(100, escrow_seed, admin, false);
         let bytes = escrow.to_bytes();
 
         // Skip discriminator (byte 0) and version (byte 1)
@@ -174,7 +174,7 @@ mod tests {
     fn test_to_bytes_roundtrip() {
         let escrow_seed = Address::new_from_array([42u8; 32]);
         let admin = Address::new_from_array([99u8; 32]);
-        let escrow = Escrow::new(128, escrow_seed, admin);
+        let escrow = Escrow::new(128, escrow_seed, admin, false);
 
         let bytes = escrow.to_bytes();
         let deserialized = Escrow::from_bytes(&bytes).unwrap();
@@ -188,7 +188,7 @@ mod tests {
     fn test_from_bytes_wrong_version() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(100, escrow_seed, admin);
+        let escrow = Escrow::new(100, escrow_seed, admin, false);
         let mut bytes = escrow.to_bytes();
         bytes[1] = Escrow::VERSION.wrapping_add(1);
 
@@ -200,7 +200,7 @@ mod tests {
     fn test_from_bytes_mut_wrong_version() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(100, escrow_seed, admin);
+        let escrow = Escrow::new(100, escrow_seed, admin, false);
         let mut bytes = escrow.to_bytes();
         bytes[1] = Escrow::VERSION.wrapping_add(1);
 
@@ -212,7 +212,7 @@ mod tests {
     fn test_write_to_slice_exact_size() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(100, escrow_seed, admin);
+        let escrow = Escrow::new(100, escrow_seed, admin, false);
 
         let mut dest = vec![0u8; Escrow::LEN];
         assert!(escrow.write_to_slice(&mut dest).is_ok());
@@ -225,7 +225,7 @@ mod tests {
     fn test_version_auto_serialized() {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        let escrow = Escrow::new(100, escrow_seed, admin);
+        let escrow = Escrow::new(100, escrow_seed, admin, false);
 
         let bytes = escrow.to_bytes();
 
