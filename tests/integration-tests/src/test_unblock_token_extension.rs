@@ -1,5 +1,8 @@
 use crate::{
-    fixtures::{AddBlockTokenExtensionsFixture, AddTimelockFixture, CreateEscrowFixture, UnblockTokenExtensionFixture},
+    fixtures::{
+        AddBlockTokenExtensionsFixture, AddTimelockFixture, CreateEscrowFixture, SetImmutableFixture,
+        UnblockTokenExtensionFixture,
+    },
     utils::extensions_utils::EXTENSION_TYPE_BLOCK_TOKEN_EXTENSIONS,
     utils::{
         assert_block_token_extensions_extension, assert_escrow_error, assert_extension_missing,
@@ -97,6 +100,27 @@ fn test_unblock_token_extension_escrow_not_owned_by_program() {
 
     let error = test_ix.with_account_at(2, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
+fn test_unblock_token_extension_fails_when_escrow_is_immutable() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    AddBlockTokenExtensionsFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), 1u16)
+        .send_expect_success(&mut ctx);
+
+    let set_immutable_ix = SetImmutableFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone());
+    set_immutable_ix.send_expect_success(&mut ctx);
+
+    let unblock_ix = UnblockTokenExtensionFixture::build_with_escrow(&mut ctx, escrow_pda, admin, 1u16);
+    let error = unblock_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::EscrowImmutable);
 }
 
 #[test]

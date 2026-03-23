@@ -1,6 +1,7 @@
 'use client';
 
 import {
+    ESCROW_PROGRAM_ERROR__ESCROW_IMMUTABLE,
     ESCROW_PROGRAM_ERROR__HOOK_PROGRAM_MISMATCH,
     ESCROW_PROGRAM_ERROR__HOOK_REJECTED,
     ESCROW_PROGRAM_ERROR__INVALID_ADMIN,
@@ -36,6 +37,7 @@ const ESCROW_PROGRAM_ERROR_MESSAGES: Record<number, string> = {
     [ESCROW_PROGRAM_ERROR__TOKEN_EXTENSION_NOT_BLOCKED]: 'Token extension is not currently blocked',
     [ESCROW_PROGRAM_ERROR__ZERO_DEPOSIT_AMOUNT]: 'Zero deposit amount',
     [ESCROW_PROGRAM_ERROR__INVALID_ARBITER]: 'Arbiter signer is missing or does not match',
+    [ESCROW_PROGRAM_ERROR__ESCROW_IMMUTABLE]: 'Escrow is immutable and cannot be modified',
 };
 
 const FALLBACK_TX_FAILED_MESSAGE = 'Transaction failed';

@@ -20,6 +20,7 @@ pub fn process_allow_mint(program_id: &Address, accounts: &[AccountView], instru
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
+    escrow.require_mutable()?;
 
     // Validate AllowedMint PDA using external seeds
     let pda_seeds = AllowedMintPda::new(ix.accounts.escrow.address(), ix.accounts.mint.address());

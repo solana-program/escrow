@@ -15,11 +15,7 @@ pinocchio::default_allocator!();
 pinocchio::nostd_panic_handler!();
 
 #[cfg(feature = "allow")]
-pub fn process_instruction(
-    _program_id: &Address,
-    accounts: &[AccountView],
-    instruction_data: &[u8],
-) -> ProgramResult {
+pub fn process_instruction(_program_id: &Address, accounts: &[AccountView], instruction_data: &[u8]) -> ProgramResult {
     use pinocchio::error::ProgramError;
 
     // Validate core context shape so integration tests catch missing account context.

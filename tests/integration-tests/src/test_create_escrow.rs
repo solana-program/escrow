@@ -1,8 +1,9 @@
 use crate::{
     fixtures::CreateEscrowFixture,
     utils::{
-        assert_escrow_account, assert_instruction_error, test_empty_data, test_missing_signer, test_not_writable,
-        test_wrong_account, test_wrong_current_program, test_wrong_system_program, InstructionTestFixture, TestContext,
+        assert_escrow_account, assert_escrow_mutability, assert_instruction_error, test_empty_data,
+        test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program,
+        test_wrong_system_program, InstructionTestFixture, TestContext,
     },
 };
 use escrow_program_client::instructions::CreatesEscrowBuilder;
@@ -92,6 +93,7 @@ fn test_create_escrow_success() {
     test_ix.send_expect_success(&mut ctx);
 
     assert_escrow_account(&ctx, &escrow_pda, &admin_pubkey, bump, &escrow_seed_pubkey);
+    assert_escrow_mutability(&ctx, &escrow_pda, false);
 }
 
 #[test]
@@ -115,6 +117,7 @@ fn test_create_escrow_prefunded_pda_succeeds() {
     test_ix.send_expect_success(&mut ctx);
 
     assert_escrow_account(&ctx, &escrow_pda, &admin_pubkey, bump, &escrow_seed_pubkey);
+    assert_escrow_mutability(&ctx, &escrow_pda, false);
 }
 
 // ============================================================================

@@ -61,6 +61,12 @@ pub fn assert_escrow_account(
     assert_eq!(escrow.escrow_seed.as_ref(), expected_escrow_seed.as_ref());
 }
 
+pub fn assert_escrow_mutability(context: &TestContext, escrow_pda: &Pubkey, expected_is_immutable: bool) {
+    let account = context.get_account(escrow_pda).expect("Escrow account should exist");
+    let escrow = Escrow::from_bytes(&account.data).expect("Should deserialize escrow account");
+    assert_eq!(escrow.is_immutable, expected_is_immutable, "Unexpected escrow mutability for {escrow_pda}");
+}
+
 pub fn assert_extensions_header(
     ctx: &TestContext,
     extensions_pda: &Pubkey,

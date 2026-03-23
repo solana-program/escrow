@@ -18,6 +18,7 @@ pub fn process_block_mint(program_id: &Address, accounts: &[AccountView], instru
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
+    escrow.require_mutable()?;
 
     // Verify allowed_mint account exists and self-validates against escrow + mint PDA derivation
     let allowed_mint_data = ix.accounts.allowed_mint.try_borrow()?;
