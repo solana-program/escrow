@@ -19,6 +19,7 @@ pub fn process_add_timelock(program_id: &Address, accounts: &[AccountView], inst
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
+    escrow.require_mutable()?;
 
     // Validate extensions PDA
     let extensions_pda = ExtensionsPda::new(ix.accounts.escrow.address());

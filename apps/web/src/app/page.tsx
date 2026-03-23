@@ -9,6 +9,7 @@ import { QuickDefaults } from '@/components/QuickDefaults';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { CreateEscrow } from '@/components/instructions/CreateEscrow';
 import { UpdateAdmin } from '@/components/instructions/UpdateAdmin';
+import { SetImmutable } from '@/components/instructions/SetImmutable';
 import { AllowMint } from '@/components/instructions/AllowMint';
 import { BlockMint } from '@/components/instructions/BlockMint';
 import { AddTimelock } from '@/components/instructions/AddTimelock';
@@ -23,6 +24,7 @@ import { Withdraw } from '@/components/instructions/Withdraw';
 type InstructionId =
     | 'createEscrow'
     | 'updateAdmin'
+    | 'setImmutable'
     | 'allowMint'
     | 'blockMint'
     | 'addTimelock'
@@ -43,6 +45,7 @@ const NAV: {
         items: [
             { id: 'createEscrow', label: 'Create Escrow' },
             { id: 'updateAdmin', label: 'Update Admin' },
+            { id: 'setImmutable', label: 'Set Immutable' },
             { id: 'allowMint', label: 'Allow Mint' },
             { id: 'blockMint', label: 'Block Mint' },
         ],
@@ -70,6 +73,7 @@ const NAV: {
 const PANELS: Record<InstructionId, { title: string; component: React.ComponentType }> = {
     createEscrow: { title: 'Create Escrow', component: CreateEscrow },
     updateAdmin: { title: 'Update Admin', component: UpdateAdmin },
+    setImmutable: { title: 'Set Immutable', component: SetImmutable },
     allowMint: { title: 'Allow Mint', component: AllowMint },
     blockMint: { title: 'Block Mint', component: BlockMint },
     addTimelock: { title: 'Add Timelock', component: AddTimelock },

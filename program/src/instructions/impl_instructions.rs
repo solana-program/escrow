@@ -12,6 +12,7 @@ use super::extensions::{
     set_hook::{SetHookAccounts, SetHookData},
     unblock_token_extension::{UnblockTokenExtensionAccounts, UnblockTokenExtensionData},
 };
+use super::set_immutable::{SetImmutableAccounts, SetImmutableData};
 use super::update_admin::{UpdateAdminAccounts, UpdateAdminData};
 use super::withdraw::{WithdrawAccounts, WithdrawData};
 
@@ -25,5 +26,6 @@ define_instruction!(RemoveExtension, RemoveExtensionAccounts, RemoveExtensionDat
 define_instruction!(SetArbiter, SetArbiterAccounts, SetArbiterData);
 define_instruction!(SetHook, SetHookAccounts, SetHookData);
 define_instruction!(UnblockTokenExtension, UnblockTokenExtensionAccounts, UnblockTokenExtensionData);
+define_instruction!(SetImmutable, SetImmutableAccounts, SetImmutableData);
 define_instruction!(UpdateAdmin, UpdateAdminAccounts, UpdateAdminData);
 define_instruction!(Withdraw, WithdrawAccounts, WithdrawData);
