@@ -7,6 +7,7 @@ use super::deposit::{DepositAccounts, DepositData};
 use super::extensions::{
     add_timelock::{AddTimelockAccounts, AddTimelockData},
     block_token_extension::{BlockTokenExtensionAccounts, BlockTokenExtensionData},
+    remove_extension::{RemoveExtensionAccounts, RemoveExtensionData},
     set_arbiter::{SetArbiterAccounts, SetArbiterData},
     set_hook::{SetHookAccounts, SetHookData},
 };
@@ -19,6 +20,7 @@ define_instruction!(CreateEscrow, CreateEscrowAccounts, CreateEscrowData);
 define_instruction!(Deposit, DepositAccounts, DepositData);
 define_instruction!(AddTimelock, AddTimelockAccounts, AddTimelockData);
 define_instruction!(BlockTokenExtension, BlockTokenExtensionAccounts, BlockTokenExtensionData);
+define_instruction!(RemoveExtension, RemoveExtensionAccounts, RemoveExtensionData);
 define_instruction!(SetArbiter, SetArbiterAccounts, SetArbiterData);
 define_instruction!(SetHook, SetHookAccounts, SetHookData);
 define_instruction!(UpdateAdmin, UpdateAdminAccounts, UpdateAdminData);

@@ -135,6 +135,12 @@ pub fn assert_arbiter_extension(ctx: &TestContext, extensions_pda: &Pubkey, expe
     assert_eq!(arbiter, *expected_arbiter, "Wrong arbiter");
 }
 
+pub fn assert_extension_missing(ctx: &TestContext, extensions_pda: &Pubkey, extension_type: u16) {
+    let account = ctx.get_account(extensions_pda).expect("Extensions account should exist");
+    let data = &account.data;
+    assert!(find_extension(data, extension_type).is_none(), "Extension type {extension_type} should be absent");
+}
+
 pub fn assert_allowed_mint_account(ctx: &TestContext, allowed_mint_pda: &Pubkey, expected_bump: u8) {
     let account = ctx.get_account(allowed_mint_pda).expect("AllowedMint account should exist");
 
