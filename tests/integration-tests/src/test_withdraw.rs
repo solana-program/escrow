@@ -450,7 +450,7 @@ fn test_withdraw_with_hook_rejected() {
 }
 
 #[test]
-fn test_withdraw_with_hook_extra_signer_rejected() {
+fn test_withdraw_with_hook_extra_signer_is_downgraded() {
     let mut ctx = TestContext::new();
     let setup = WithdrawSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
     let extra_signer = ctx.create_funded_keypair();
@@ -459,9 +459,8 @@ fn test_withdraw_with_hook_extra_signer_rejected() {
     test_ix.instruction.accounts.push(AccountMeta::new_readonly(extra_signer.pubkey(), true));
     test_ix.signers.push(extra_signer.insecure_clone());
 
-    let error = test_ix.send_expect_error(&mut ctx);
-    assert_escrow_error(error, EscrowError::HookRejected);
-    assert!(ctx.get_account(&setup.receipt_pda).is_some(), "Receipt should remain after rejected hook");
+    test_ix.send_expect_success(&mut ctx);
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed after successful withdraw");
 }
 
 // ============================================================================

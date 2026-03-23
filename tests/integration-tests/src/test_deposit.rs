@@ -423,7 +423,7 @@ fn test_deposit_with_hook_rejected() {
 }
 
 #[test]
-fn test_deposit_with_hook_extra_signer_rejected() {
+fn test_deposit_with_hook_extra_signer_is_downgraded() {
     let mut ctx = TestContext::new();
     let setup = DepositSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
     let extra_signer = ctx.create_funded_keypair();
@@ -432,8 +432,10 @@ fn test_deposit_with_hook_extra_signer_rejected() {
     test_ix.instruction.accounts.push(AccountMeta::new_readonly(extra_signer.pubkey(), true));
     test_ix.signers.push(extra_signer.insecure_clone());
 
-    let error = test_ix.send_expect_error(&mut ctx);
-    assert_escrow_error(error, EscrowError::HookRejected);
+    test_ix.send_expect_success(&mut ctx);
+
+    let receipt_account = ctx.get_account(&setup.receipt_pda).expect("Deposit receipt should exist");
+    assert!(!receipt_account.data.is_empty());
 }
 
 // ============================================================================
