@@ -7,8 +7,8 @@ pub mod deposit;
 pub mod remove_extension;
 pub mod set_arbiter;
 pub mod set_hook;
-pub mod unblock_token_extension;
 pub mod set_immutable;
+pub mod unblock_token_extension;
 pub mod update_admin;
 pub mod withdraw;
 
@@ -21,7 +21,7 @@ pub use deposit::{DepositFixture, DepositSetup, DEFAULT_DEPOSIT_AMOUNT};
 pub use remove_extension::RemoveExtensionFixture;
 pub use set_arbiter::SetArbiterFixture;
 pub use set_hook::SetHookFixture;
-pub use unblock_token_extension::UnblockTokenExtensionFixture;
 pub use set_immutable::SetImmutableFixture;
+pub use unblock_token_extension::UnblockTokenExtensionFixture;
 pub use update_admin::UpdateAdminFixture;
 pub use withdraw::{WithdrawFixture, WithdrawSetup};
