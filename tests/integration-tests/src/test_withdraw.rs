@@ -421,8 +421,7 @@ fn test_withdraw_with_hook_rejected() {
     let mut ctx = TestContext::new();
     let mut setup = WithdrawSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
 
-    // Escrow is immutable by the time receipts exist. Patch the hook extension directly
-    // to simulate a deny hook for withdraw-path rejection coverage.
+    // Patch the hook extension directly to simulate a deny hook for withdraw-path rejection coverage.
     let mut extensions_account = ctx.get_account(&setup.extensions_pda).expect("Extensions account should exist");
     extensions_account.data[8..40].copy_from_slice(&TEST_HOOK_DENY_ID.to_bytes());
     ctx.svm.set_account(setup.extensions_pda, extensions_account).unwrap();
