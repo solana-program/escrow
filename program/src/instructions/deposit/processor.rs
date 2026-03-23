@@ -28,7 +28,8 @@ pub fn process_deposit(program_id: &Address, accounts: &[AccountView], instructi
 
     // Verify escrow exists and is valid
     let escrow_data = ix.accounts.escrow.try_borrow()?;
-    let _escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
+    let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
+    escrow.require_immutable()?;
 
     // Verify allowed_mint account exists and self-validates against escrow + mint PDA derivation
     let allowed_mint_data = ix.accounts.allowed_mint.try_borrow()?;

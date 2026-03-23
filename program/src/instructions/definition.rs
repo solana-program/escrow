@@ -303,7 +303,6 @@ pub enum EscrowProgramInstruction {
     } = 8,
 
     /// Set an arbiter on an escrow. The arbiter must sign withdrawal transactions.
-    /// This is immutable — once set, the arbiter cannot be changed.
     #[codama(account(name = "payer", signer, writable))]
     #[codama(account(name = "admin", signer))]
     #[codama(account(name = "arbiter", signer))]
@@ -385,6 +384,21 @@ pub enum EscrowProgramInstruction {
         /// Token-2022 ExtensionType value to unblock
         blocked_extension: u16,
     } = 11,
+
+    /// Lock an escrow so configuration can no longer be modified.
+    #[codama(account(name = "admin", docs = "Admin authority for the escrow", signer))]
+    #[codama(account(name = "escrow", docs = "Escrow account to lock as immutable", writable))]
+    #[codama(account(
+        name = "event_authority",
+        docs = "Event authority PDA for CPI event emission",
+        default_value = public_key("Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M")
+    ))]
+    #[codama(account(
+        name = "escrow_program",
+        docs = "Escrow program for CPI event emission",
+        default_value = public_key("Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg")
+    ))]
+    SetImmutable {} = 12,
 
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(skip)]

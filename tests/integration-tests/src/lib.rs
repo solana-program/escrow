@@ -21,6 +21,7 @@ mod test_set_arbiter;
 mod test_set_hook;
 #[cfg(test)]
 mod test_unblock_token_extension;
+mod test_set_immutable;
 #[cfg(test)]
 mod test_update_admin;
 #[cfg(test)]
