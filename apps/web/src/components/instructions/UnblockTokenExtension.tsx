@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Address } from '@solana/kit';
-import { findExtensionsPda, getBlockTokenExtensionInstructionAsync } from '@solana/escrow-program-client';
+import { getUnblockTokenExtensionInstructionAsync } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
@@ -11,7 +11,6 @@ import { TxResult } from '@/components/TxResult';
 import { firstValidationError, validateAddress } from '@/lib/validation';
 import { FormField, SelectField, SendButton } from './shared';
 
-// SPL Token-2022 ExtensionType numeric values
 const EXTENSION_OPTIONS = [
     { label: 'NonTransferable (5)', value: '5' },
     { label: 'PermanentDelegate (8)', value: '8' },
@@ -22,13 +21,13 @@ const EXTENSION_OPTIONS = [
     { label: 'MetadataPointer (18)', value: '18' },
 ];
 
-export function BlockTokenExtension() {
+export function UnblockTokenExtension() {
     const { createSigner } = useWallet();
     const { send, sending, signature, error, reset } = useSendTx();
     const { defaultEscrow, rememberEscrow } = useSavedValues();
     const { programId } = useProgramContext();
     const [escrow, setEscrow] = useState('');
-    const [extensionType, setExtensionType] = useState('5');
+    const [blockedExtension, setBlockedExtension] = useState('5');
     const [formError, setFormError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -44,23 +43,18 @@ export function BlockTokenExtension() {
             return;
         }
 
-        const [, extensionsBump] = await findExtensionsPda(
-            { escrow: escrow as Address },
-            { programAddress: programId as Address },
-        );
-        const ix = await getBlockTokenExtensionInstructionAsync(
+        const ix = await getUnblockTokenExtensionInstructionAsync(
             {
                 admin: signer,
                 escrow: escrow as Address,
-                blockedExtension: Number(extensionType),
-                extensionsBump,
+                blockedExtension: Number(blockedExtension),
                 payer: signer,
             },
             { programAddress: programId as Address },
         );
         const txSignature = await send([ix], {
-            action: 'Block Token Extension',
-            values: { escrow },
+            action: 'Unblock Token Extension',
+            values: { escrow, extensionType: blockedExtension },
         });
         if (txSignature) {
             rememberEscrow(escrow);
@@ -85,10 +79,10 @@ export function BlockTokenExtension() {
             />
             <SelectField
                 label="Extension Type"
-                value={extensionType}
-                onChange={setExtensionType}
+                value={blockedExtension}
+                onChange={setBlockedExtension}
                 options={EXTENSION_OPTIONS}
-                hint="SPL Token-2022 extension type to block from deposits"
+                hint="Token-2022 extension type to remove from escrow blocked list"
             />
             <SendButton sending={sending} />
             <TxResult signature={signature} error={formError ?? error} />

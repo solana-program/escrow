@@ -1,5 +1,8 @@
 use crate::{
-    fixtures::{AddBlockTokenExtensionsFixture, DepositFixture, DepositSetup, DEFAULT_DEPOSIT_AMOUNT},
+    fixtures::{
+        AddBlockTokenExtensionsFixture, DepositFixture, DepositSetup, UnblockTokenExtensionFixture,
+        DEFAULT_DEPOSIT_AMOUNT,
+    },
     utils::{
         assert_custom_error, assert_escrow_error, assert_instruction_error, find_receipt_pda, test_empty_data,
         test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program, test_wrong_owner,
@@ -155,6 +158,30 @@ fn test_deposit_rejects_newly_blocked_mint_extension() {
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
     assert_escrow_error(error, EscrowError::MintNotAllowed);
+}
+
+#[test]
+fn test_deposit_allows_previously_unblocked_mint_extension() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::builder(&mut ctx).mint_extension(ExtensionType::MetadataPointer).build();
+
+    AddBlockTokenExtensionsFixture::build_with_escrow(
+        &mut ctx,
+        setup.escrow_pda,
+        setup.admin.insecure_clone(),
+        ExtensionType::MetadataPointer as u16,
+    )
+    .send_expect_success(&mut ctx);
+
+    UnblockTokenExtensionFixture::build_with_escrow(
+        &mut ctx,
+        setup.escrow_pda,
+        setup.admin.insecure_clone(),
+        ExtensionType::MetadataPointer as u16,
+    )
+    .send_expect_success(&mut ctx);
+
+    setup.build_instruction(&ctx).send_expect_success(&mut ctx);
 }
 
 #[test]
