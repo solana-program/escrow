@@ -4,8 +4,8 @@ use crate::{
     instructions::{
         process_add_timelock, process_allow_mint, process_block_mint, process_block_token_extension,
         process_create_escrow, process_deposit, process_emit_event, process_remove_extension, process_set_arbiter,
-        process_set_hook, process_unblock_token_extension, process_update_admin, process_withdraw,
-        process_set_immutable,
+        process_set_hook, process_set_immutable, process_unblock_token_extension, process_update_admin,
+        process_withdraw,
     },
     traits::EscrowInstructionDiscriminators,
 };
