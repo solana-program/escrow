@@ -58,6 +58,20 @@ impl BlockTokenExtensionsData {
 
         Ok(())
     }
+
+    /// Remove a single extension from the list.
+    ///
+    /// Returns an error if the extension does not exist.
+    pub fn remove_extension(&mut self, extension: u16) -> Result<(), ProgramError> {
+        let Some(index) = self.blocked_extensions.iter().position(|&ext| ext == extension) else {
+            return Err(EscrowProgramError::TokenExtensionNotBlocked.into());
+        };
+
+        self.blocked_extensions.remove(index);
+        self.count = self.count.checked_sub(1).ok_or(ProgramError::InvalidAccountData)?;
+
+        Ok(())
+    }
 }
 
 impl ExtensionData for BlockTokenExtensionsData {
@@ -90,6 +104,8 @@ impl ExtensionData for BlockTokenExtensionsData {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec;
+
     use super::*;
 
     #[test]
@@ -182,6 +198,31 @@ mod tests {
         let result = data.add_extension(1u16);
         assert!(result.is_err());
         assert_eq!(data.count, 1);
+    }
+
+    #[test]
+    fn test_block_token_extensions_remove_extension() {
+        let mut data = BlockTokenExtensionsData::new(&[1u16, 2u16, 3u16]).unwrap();
+        data.remove_extension(2u16).unwrap();
+        assert_eq!(data.count, 2);
+        assert_eq!(data.blocked_extensions, vec![1u16, 3u16]);
+    }
+
+    #[test]
+    fn test_block_token_extensions_remove_extension_last_item() {
+        let mut data = BlockTokenExtensionsData::new(&[1u16]).unwrap();
+        data.remove_extension(1u16).unwrap();
+        assert_eq!(data.count, 0);
+        assert!(data.blocked_extensions.is_empty());
+    }
+
+    #[test]
+    fn test_block_token_extensions_remove_extension_missing() {
+        let mut data = BlockTokenExtensionsData::new(&[1u16, 2u16]).unwrap();
+        let result = data.remove_extension(3u16);
+        assert!(result.is_err());
+        assert_eq!(data.count, 2);
+        assert_eq!(data.blocked_extensions, vec![1u16, 2u16]);
     }
 
     #[test]

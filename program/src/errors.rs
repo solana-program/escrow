@@ -64,6 +64,10 @@ pub enum EscrowProgramError {
     /// (14) Arbiter signer is missing or does not match
     #[error("Arbiter signer is missing or does not match")]
     InvalidArbiter,
+
+    /// (15) Token extension is not currently blocked
+    #[error("Token extension is not currently blocked")]
+    TokenExtensionNotBlocked,
 }
 
 impl From<EscrowProgramError> for ProgramError {

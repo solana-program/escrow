@@ -357,6 +357,35 @@ pub enum EscrowProgramInstruction {
         extension_type: u16,
     } = 10,
 
+    /// Unblock a previously blocked token extension for an escrow.
+    #[codama(account(name = "payer", docs = "Pays for transaction fees", signer, writable))]
+    #[codama(account(name = "admin", docs = "Admin authority for the escrow", signer))]
+    #[codama(account(name = "escrow", docs = "Escrow account to unblock extension on"))]
+    #[codama(account(
+        name = "extensions",
+        docs = "Extensions PDA account to mutate",
+        writable,
+        default_value = pda("extensions", [seed("escrow", account("escrow"))])
+    ))]
+    #[codama(account(name = "system_program", docs = "System program", default_value = program("system")))]
+    #[codama(account(
+        name = "event_authority",
+        docs = "Event authority PDA for CPI event emission",
+        default_value = public_key("Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M")
+    ))]
+    #[codama(account(
+        name = "escrow_program",
+        docs = "Escrow program for CPI event emission",
+        default_value = public_key("Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg")
+    ))]
+    UnblockTokenExtension {
+        /// Bump for extensions PDA
+        #[codama(default_value = account_bump("extensions"))]
+        extensions_bump: u8,
+        /// Token-2022 ExtensionType value to unblock
+        blocked_extension: u16,
+    } = 11,
+
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(skip)]
     #[codama(account(

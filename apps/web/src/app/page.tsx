@@ -16,6 +16,7 @@ import { SetHook } from '@/components/instructions/SetHook';
 import { BlockTokenExtension } from '@/components/instructions/BlockTokenExtension';
 import { SetArbiter } from '@/components/instructions/SetArbiter';
 import { RemoveExtension } from '@/components/instructions/RemoveExtension';
+import { UnblockTokenExtension } from '@/components/instructions/UnblockTokenExtension';
 import { Deposit } from '@/components/instructions/Deposit';
 import { Withdraw } from '@/components/instructions/Withdraw';
 
@@ -27,6 +28,7 @@ type InstructionId =
     | 'addTimelock'
     | 'setHook'
     | 'blockTokenExtension'
+    | 'unblockTokenExtension'
     | 'setArbiter'
     | 'removeExtension'
     | 'deposit'
@@ -51,6 +53,7 @@ const NAV: {
             { id: 'addTimelock', label: 'Add Timelock' },
             { id: 'setHook', label: 'Set Hook' },
             { id: 'blockTokenExtension', label: 'Block Token Ext' },
+            { id: 'unblockTokenExtension', label: 'Unblock Token Ext' },
             { id: 'setArbiter', label: 'Set Arbiter' },
             { id: 'removeExtension', label: 'Remove Extension' },
         ],
@@ -72,6 +75,7 @@ const PANELS: Record<InstructionId, { title: string; component: React.ComponentT
     addTimelock: { title: 'Add Timelock', component: AddTimelock },
     setHook: { title: 'Set Hook', component: SetHook },
     blockTokenExtension: { title: 'Block Token Extension', component: BlockTokenExtension },
+    unblockTokenExtension: { title: 'Unblock Token Extension', component: UnblockTokenExtension },
     setArbiter: { title: 'Set Arbiter', component: SetArbiter },
     removeExtension: { title: 'Remove Extension', component: RemoveExtension },
     deposit: { title: 'Deposit', component: Deposit },
