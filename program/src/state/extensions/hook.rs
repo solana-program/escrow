@@ -65,14 +65,12 @@ impl HookData {
         self.validate(remaining_accounts)?;
 
         let extra_accounts = remaining_accounts.get(1..).unwrap_or(&[]);
-        if extra_accounts.iter().any(|acc| acc.is_signer()) {
-            return Err(EscrowProgramError::HookRejected.into());
-        }
-
         let all_accounts: Vec<&AccountView> = core_accounts.iter().copied().chain(extra_accounts.iter()).collect();
 
-        // Build instruction accounts - ALL accounts are read-only
-        let instruction_accounts: Vec<InstructionAccount> = all_accounts.iter().map(|acc| (*acc).into()).collect();
+        // Build instruction accounts with least privilege for hook CPI
+        // (read-only + non-signer regardless of caller flags).
+        let instruction_accounts: Vec<InstructionAccount> =
+            all_accounts.iter().map(|acc| InstructionAccount::new(acc.address(), false, false)).collect();
 
         // Instruction data is just the 1-byte hook point discriminator
         let instruction_data = [hook_point as u8];
