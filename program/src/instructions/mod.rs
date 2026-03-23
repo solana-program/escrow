@@ -6,6 +6,7 @@ pub mod deposit;
 pub mod emit_event;
 pub mod extensions;
 pub mod impl_instructions;
+pub mod set_immutable;
 pub mod update_admin;
 pub mod withdraw;
 
@@ -18,5 +19,6 @@ pub use deposit::*;
 pub use emit_event::*;
 pub use extensions::*;
 pub use impl_instructions::*;
+pub use set_immutable::*;
 pub use update_admin::*;
 pub use withdraw::*;

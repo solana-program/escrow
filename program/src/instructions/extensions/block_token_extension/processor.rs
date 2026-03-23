@@ -23,6 +23,7 @@ pub fn process_block_token_extension(
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
+    escrow.require_mutable()?;
 
     // Validate extensions PDA
     let extensions_pda = ExtensionsPda::new(ix.accounts.escrow.address());

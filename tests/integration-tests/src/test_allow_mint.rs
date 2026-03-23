@@ -6,7 +6,7 @@ use crate::{
         test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
-use escrow_program_client::instructions::AllowMintBuilder;
+use escrow_program_client::instructions::{AllowMintBuilder, SetImmutableBuilder};
 use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey, signature::Signer};
 use spl_associated_token_account::get_associated_token_address;
 use spl_token_2022::extension::ExtensionType;
@@ -129,6 +129,20 @@ fn test_allow_mint_duplicate() {
     let duplicate_ix = setup.build_instruction(&ctx);
     let error = duplicate_ix.send_expect_error(&mut ctx);
     assert!(matches!(error, solana_sdk::transaction::TransactionError::AlreadyProcessed));
+}
+
+#[test]
+fn test_allow_mint_fails_when_escrow_is_immutable() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+
+    let set_immutable_ix =
+        SetImmutableBuilder::new().admin(setup.admin.pubkey()).escrow(setup.escrow_pda).instruction();
+    ctx.send_transaction(set_immutable_ix, &[&setup.admin]).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::EscrowImmutable);
 }
 
 // ============================================================================

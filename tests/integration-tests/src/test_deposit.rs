@@ -1,6 +1,6 @@
 use crate::{
     fixtures::{
-        AddBlockTokenExtensionsFixture, DepositFixture, DepositSetup, UnblockTokenExtensionFixture,
+        AddBlockTokenExtensionsFixture, AllowMintSetup, DepositFixture, DepositSetup, UnblockTokenExtensionFixture,
         DEFAULT_DEPOSIT_AMOUNT,
     },
     utils::{
@@ -10,13 +10,12 @@ use crate::{
         TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
     },
 };
-use escrow_program_client::instructions::AddTimelockBuilder;
 use escrow_program_client::instructions::DepositBuilder;
 use solana_sdk::{
     account::Account,
     instruction::{AccountMeta, InstructionError},
     pubkey::Pubkey,
-    signature::Signer,
+    signature::{Keypair, Signer},
 };
 use spl_token_2022::extension::ExtensionType;
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
@@ -118,20 +117,51 @@ fn test_deposit_wrong_allowed_mint_owner() {
 }
 
 #[test]
+fn test_deposit_succeeds_when_escrow_is_mutable() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+    setup.build_instruction(&ctx).send_expect_success(&mut ctx);
+
+    let depositor = ctx.create_funded_keypair();
+    let depositor_token_account =
+        ctx.create_token_account_with_balance(&depositor.pubkey(), &setup.mint_pubkey, DEFAULT_DEPOSIT_AMOUNT * 10);
+    let initial_depositor_balance = ctx.get_token_balance(&depositor_token_account);
+    let initial_vault_balance = ctx.get_token_balance(&setup.vault);
+    let receipt_seed = Keypair::new();
+    let (receipt_pda, bump) =
+        find_receipt_pda(&setup.escrow_pda, &depositor.pubkey(), &setup.mint_pubkey, &receipt_seed.pubkey());
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(receipt_seed.pubkey())
+        .receipt(receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(depositor_token_account)
+        .mint(setup.mint_pubkey)
+        .token_program(setup.token_program)
+        .extensions(setup.escrow_extensions_pda)
+        .bump(bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    ctx.send_transaction(instruction, &[&depositor, &receipt_seed]).unwrap();
+
+    let final_depositor_balance = ctx.get_token_balance(&depositor_token_account);
+    let final_vault_balance = ctx.get_token_balance(&setup.vault);
+    assert_eq!(final_depositor_balance, initial_depositor_balance - DEFAULT_DEPOSIT_AMOUNT);
+    assert_eq!(final_vault_balance, initial_vault_balance + DEFAULT_DEPOSIT_AMOUNT);
+
+    let receipt_account = ctx.get_account(&receipt_pda).expect("Deposit receipt should exist");
+    assert!(!receipt_account.data.is_empty());
+}
+
+#[test]
 fn test_deposit_initialized_extensions_wrong_owner() {
     let mut ctx = TestContext::new();
-    let setup = DepositSetup::new(&mut ctx);
-
-    let (extensions_pda, extensions_bump) = crate::utils::find_extensions_pda(&setup.escrow_pda);
-    let add_timelock_ix = AddTimelockBuilder::new()
-        .payer(ctx.payer.pubkey())
-        .admin(setup.admin.pubkey())
-        .escrow(setup.escrow_pda)
-        .extensions(extensions_pda)
-        .extensions_bump(extensions_bump)
-        .lock_duration(1)
-        .instruction();
-    ctx.send_transaction(add_timelock_ix, &[&setup.admin]).unwrap();
+    let setup = DepositSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
 
     let mut extensions_account = ctx.get_account(&setup.extensions_pda).expect("Extensions account should exist");
     extensions_account.owner = Pubkey::new_unique();
@@ -145,7 +175,9 @@ fn test_deposit_initialized_extensions_wrong_owner() {
 #[test]
 fn test_deposit_rejects_newly_blocked_mint_extension() {
     let mut ctx = TestContext::new();
-    let setup = DepositSetup::builder(&mut ctx).mint_extension(ExtensionType::MetadataPointer).build();
+    let setup = AllowMintSetup::builder(&mut ctx).mint_extension(ExtensionType::MetadataPointer).build();
+
+    setup.build_instruction(&ctx).send_expect_success(&mut ctx);
 
     let block_extension_ix = AddBlockTokenExtensionsFixture::build_with_escrow(
         &mut ctx,
@@ -155,8 +187,30 @@ fn test_deposit_rejects_newly_blocked_mint_extension() {
     );
     block_extension_ix.send_expect_success(&mut ctx);
 
-    let test_ix = setup.build_instruction(&ctx);
-    let error = test_ix.send_expect_error(&mut ctx);
+    let depositor = ctx.create_funded_keypair();
+    let depositor_token_account =
+        ctx.create_token_2022_account_with_balance(&depositor.pubkey(), &setup.mint_pubkey, DEFAULT_DEPOSIT_AMOUNT);
+    let receipt_seed = Keypair::new();
+    let (receipt_pda, bump) =
+        find_receipt_pda(&setup.escrow_pda, &depositor.pubkey(), &setup.mint_pubkey, &receipt_seed.pubkey());
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(receipt_seed.pubkey())
+        .receipt(receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(depositor_token_account)
+        .mint(setup.mint_pubkey)
+        .token_program(setup.token_program)
+        .extensions(setup.escrow_extensions_pda)
+        .bump(bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    let error = ctx.send_transaction_expect_error(instruction, &[&depositor, &receipt_seed]);
     assert_escrow_error(error, EscrowError::MintNotAllowed);
 }
 
