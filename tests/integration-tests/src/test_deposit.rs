@@ -1,7 +1,6 @@
 use crate::{
     fixtures::{
-        AddBlockTokenExtensionsFixture, AllowMintSetup, DepositFixture, DepositSetup, SetImmutableFixture,
-        UnblockTokenExtensionFixture,
+        AddBlockTokenExtensionsFixture, AllowMintSetup, DepositFixture, DepositSetup, UnblockTokenExtensionFixture,
         DEFAULT_DEPOSIT_AMOUNT,
     },
     utils::{
@@ -187,10 +186,6 @@ fn test_deposit_rejects_newly_blocked_mint_extension() {
         ExtensionType::MetadataPointer as u16,
     );
     block_extension_ix.send_expect_success(&mut ctx);
-
-    let set_immutable_ix =
-        SetImmutableFixture::build_with_escrow(&mut ctx, setup.escrow_pda, setup.admin.insecure_clone());
-    set_immutable_ix.send_expect_success(&mut ctx);
 
     let depositor = ctx.create_funded_keypair();
     let depositor_token_account =

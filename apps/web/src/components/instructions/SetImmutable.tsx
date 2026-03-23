@@ -58,7 +58,9 @@ export function SetImmutable() {
             style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
         >
             <div>
-                <Badge variant="warning">This action is one-way. Escrow configuration becomes permanently immutable.</Badge>
+                <Badge variant="warning">
+                    This action is one-way. Escrow configuration becomes permanently immutable.
+                </Badge>
             </div>
             <FormField
                 label="Escrow Address"

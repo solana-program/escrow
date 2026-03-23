@@ -1,6 +1,4 @@
-use escrow_program_client::instructions::{
-    AllowMintBuilder, CreatesEscrowBuilder, DepositBuilder, SetHookBuilder, SetImmutableBuilder,
-};
+use escrow_program_client::instructions::{AllowMintBuilder, CreatesEscrowBuilder, DepositBuilder, SetHookBuilder};
 use solana_address::Address;
 use solana_sdk::{
     instruction::AccountMeta,
@@ -180,9 +178,6 @@ impl<'a> DepositSetupBuilder<'a> {
             .instruction();
 
         self.ctx.send_transaction(allow_mint_ix, &[&admin]).unwrap();
-
-        let set_immutable_ix = SetImmutableBuilder::new().admin(admin.pubkey()).escrow(escrow_pda).instruction();
-        self.ctx.send_transaction(set_immutable_ix, &[&admin]).unwrap();
 
         let depositor = self.ctx.create_funded_keypair();
         if token_program == TOKEN_2022_PROGRAM_ID {

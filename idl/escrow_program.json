@@ -785,12 +785,6 @@
         "kind": "errorNode",
         "message": "Escrow is immutable and cannot be modified",
         "name": "escrowImmutable"
-      },
-      {
-        "code": 17,
-        "kind": "errorNode",
-        "message": "Escrow must be immutable before deposits are allowed",
-        "name": "escrowNotImmutable"
       }
     ],
     "instructions": [

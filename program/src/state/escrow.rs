@@ -115,14 +115,6 @@ impl Escrow {
     }
 
     #[inline(always)]
-    pub fn require_immutable(&self) -> Result<(), ProgramError> {
-        if !self.is_immutable {
-            return Err(EscrowProgramError::EscrowNotImmutable.into());
-        }
-        Ok(())
-    }
-
-    #[inline(always)]
     pub fn set_immutable(&self) -> Self {
         Self::new(self.bump, self.escrow_seed, self.admin, true)
     }
@@ -277,13 +269,6 @@ mod tests {
         let escrow = Escrow::new(1, Address::new_from_array([1u8; 32]), Address::new_from_array([2u8; 32]), true);
         let result = escrow.require_mutable();
         assert_eq!(result, Err(EscrowProgramError::EscrowImmutable.into()));
-    }
-
-    #[test]
-    fn test_require_immutable_fails_when_mutable() {
-        let escrow = Escrow::new(1, Address::new_from_array([1u8; 32]), Address::new_from_array([2u8; 32]), false);
-        let result = escrow.require_immutable();
-        assert_eq!(result, Err(EscrowProgramError::EscrowNotImmutable.into()));
     }
 
     #[test]
