@@ -257,6 +257,76 @@ pub fn update_extension<const N: usize>(
     Ok(())
 }
 
+/// Removes an existing TLV extension entry from the extensions PDA.
+///
+/// Finds the extension by type, removes it from TLV data, decrements extension count,
+/// and shrinks the account data size accordingly.
+/// Returns error if the extension type doesn't exist.
+pub fn remove_extension(extensions: &AccountView, ext_type: ExtensionType) -> ProgramResult {
+    let current_data_len = extensions.data_len();
+    if current_data_len == 0 {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let data = extensions.try_borrow()?;
+    let header = EscrowExtensionsHeader::from_bytes(&data)?;
+
+    if header.extension_count == 0 {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    // Find the extension entry.
+    let mut offset = EscrowExtensionsHeader::LEN;
+    let mut found_offset = None;
+    let mut removed_tlv_len = 0;
+
+    while offset + TLV_HEADER_SIZE <= data.len() {
+        let type_bytes = u16::from_le_bytes([data[offset], data[offset + 1]]);
+        let length = u16::from_le_bytes([data[offset + 2], data[offset + 3]]) as usize;
+
+        if offset + TLV_HEADER_SIZE + length > data.len() {
+            break;
+        }
+
+        if type_bytes == ext_type as u16 {
+            found_offset = Some(offset);
+            removed_tlv_len = TLV_HEADER_SIZE + length;
+            break;
+        }
+
+        offset += TLV_HEADER_SIZE + length;
+    }
+
+    let found_offset = found_offset.ok_or(ProgramError::UninitializedAccount)?;
+    let new_extension_count = header.extension_count.checked_sub(1).ok_or(ProgramError::InvalidAccountData)?;
+
+    // Build new TLV data without the removed extension.
+    let before = data[EscrowExtensionsHeader::LEN..found_offset].to_vec();
+    let after_start = found_offset + removed_tlv_len;
+    let after = data[after_start..].to_vec();
+    let mut new_tlv_data = Vec::with_capacity(before.len() + after.len());
+    new_tlv_data.extend_from_slice(&before);
+    new_tlv_data.extend_from_slice(&after);
+
+    drop(data);
+
+    let required_size = EscrowExtensionsHeader::LEN + new_tlv_data.len();
+
+    // Shrink the account to reclaim unused data bytes.
+    extensions.resize(required_size)?;
+
+    // Write updated header and TLV bytes.
+    let mut data = extensions.try_borrow_mut()?;
+    let new_header = EscrowExtensionsHeader::new(header.bump, new_extension_count);
+    let header_bytes = new_header.to_bytes();
+    data[..EscrowExtensionsHeader::LEN].copy_from_slice(&header_bytes);
+    if !new_tlv_data.is_empty() {
+        data[EscrowExtensionsHeader::LEN..required_size].copy_from_slice(&new_tlv_data);
+    }
+
+    Ok(())
+}
+
 /// Updates or appends a TLV extension to the extensions PDA.
 ///
 /// Simplifies the common pattern of checking if extension exists and either updating or appending:

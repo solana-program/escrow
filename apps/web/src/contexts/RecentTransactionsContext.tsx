@@ -11,6 +11,7 @@ export interface RecentTransactionValues {
     mint?: string;
     receipt?: string;
     amount?: string;
+    extensionType?: string;
     lockDuration?: string;
     hookProgram?: string;
     rentRecipient?: string;

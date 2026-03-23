@@ -328,6 +328,35 @@ pub enum EscrowProgramInstruction {
         extensions_bump: u8,
     } = 9,
 
+    /// Remove an extension from an escrow.
+    #[codama(account(name = "payer", docs = "Pays for transaction fees", signer, writable))]
+    #[codama(account(name = "admin", docs = "Admin authority for the escrow", signer))]
+    #[codama(account(name = "escrow", docs = "Escrow account to remove extension from"))]
+    #[codama(account(
+        name = "extensions",
+        docs = "Extensions PDA account to mutate",
+        writable,
+        default_value = pda("extensions", [seed("escrow", account("escrow"))])
+    ))]
+    #[codama(account(name = "system_program", docs = "System program", default_value = program("system")))]
+    #[codama(account(
+        name = "event_authority",
+        docs = "Event authority PDA for CPI event emission",
+        default_value = public_key("Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M")
+    ))]
+    #[codama(account(
+        name = "escrow_program",
+        docs = "Escrow program for CPI event emission",
+        default_value = public_key("Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg")
+    ))]
+    RemoveExtension {
+        /// Bump for extensions PDA
+        #[codama(default_value = account_bump("extensions"))]
+        extensions_bump: u8,
+        /// Escrow extension type discriminator to remove
+        extension_type: u16,
+    } = 10,
+
     /// Invoked via CPI to emit event data in instruction args (prevents log truncation).
     #[codama(skip)]
     #[codama(account(
