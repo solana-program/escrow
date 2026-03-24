@@ -18,7 +18,6 @@ pub fn process_update_admin(program_id: &Address, accounts: &[AccountView], inst
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
-    escrow.require_mutable()?;
 
     // Copy values we need for the update
     let old_admin = escrow.admin;

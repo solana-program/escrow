@@ -73,7 +73,7 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
         hook.invoke(
             HookPoint::PreWithdraw,
             remaining_accounts,
-            &[ix.accounts.escrow, ix.accounts.mint, ix.accounts.receipt],
+            &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
 
@@ -102,7 +102,7 @@ pub fn process_withdraw(program_id: &Address, accounts: &[AccountView], instruct
         hook.invoke(
             HookPoint::PostWithdraw,
             remaining_accounts,
-            &[ix.accounts.escrow, ix.accounts.mint, ix.accounts.receipt],
+            &[ix.accounts.escrow, ix.accounts.withdrawer, ix.accounts.mint, ix.accounts.receipt],
         )?;
     }
 
