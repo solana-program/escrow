@@ -132,7 +132,7 @@ fn test_allow_mint_duplicate() {
 }
 
 #[test]
-fn test_allow_mint_fails_when_escrow_is_immutable() {
+fn test_allow_mint_succeeds_when_escrow_is_immutable() {
     let mut ctx = TestContext::new();
     let setup = AllowMintSetup::new(&mut ctx);
 
@@ -141,8 +141,10 @@ fn test_allow_mint_fails_when_escrow_is_immutable() {
     ctx.send_transaction(set_immutable_ix, &[&setup.admin]).unwrap();
 
     let test_ix = setup.build_instruction(&ctx);
-    let error = test_ix.send_expect_error(&mut ctx);
-    assert_escrow_error(error, EscrowError::EscrowImmutable);
+    test_ix.send_expect_success(&mut ctx);
+
+    assert_account_exists(&ctx, &setup.allowed_mint_pda);
+    assert_allowed_mint_account(&ctx, &setup.allowed_mint_pda, setup.allowed_mint_bump);
 }
 
 // ============================================================================

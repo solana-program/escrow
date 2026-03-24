@@ -126,6 +126,20 @@ fn test_remove_extension_fails_when_escrow_is_immutable() {
 }
 
 #[test]
+fn test_remove_extension_extensions_not_owned_by_program() {
+    let mut ctx = TestContext::new();
+    let test_ix = RemoveExtensionFixture::build_valid(&mut ctx);
+    let extensions_pda = test_ix.instruction.accounts[3].pubkey;
+
+    let mut extensions_account = ctx.get_account(&extensions_pda).expect("Extensions account should exist");
+    extensions_account.owner = Pubkey::new_unique();
+    ctx.svm.set_account(extensions_pda, extensions_account).unwrap();
+
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
 fn test_remove_extension_invalid_type() {
     let mut ctx = TestContext::new();
     let test_ix = RemoveExtensionFixture::build_valid(&mut ctx);

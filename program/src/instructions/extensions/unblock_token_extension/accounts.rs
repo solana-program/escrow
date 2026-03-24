@@ -54,6 +54,7 @@ impl<'a> TryFrom<&'a [AccountView]> for UnblockTokenExtensionAccounts<'a> {
 
         // 5. Validate accounts owned by current program
         verify_current_program_account(escrow)?;
+        verify_current_program_account(extensions)?;
 
         Ok(Self { payer, admin, escrow, extensions, system_program, event_authority, escrow_program })
     }
