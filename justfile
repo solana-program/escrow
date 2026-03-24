@@ -37,6 +37,10 @@ check:
     pnpm lint
     pnpm run typecheck
 
+# TypeScript type checking across all workspaces
+typecheck:
+    pnpm -r run typecheck
+
 # Run unit tests
 unit-test:
     cargo test -p escrow-program
