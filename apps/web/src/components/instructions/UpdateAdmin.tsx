@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { Address } from '@solana/kit';
 import { Badge } from '@solana/design-system/badge';
-import { getUpdateAdminInstruction } from '@solana/escrow-program-client';
+import { getUpdateAdminInstructionAsync } from '@solana/escrow-program-client';
 import { useSendTx } from '@/hooks/useSendTx';
 import { useSavedValues } from '@/contexts/SavedValuesContext';
 import { useWallet } from '@/contexts/WalletContext';
@@ -33,7 +33,7 @@ export function UpdateAdmin() {
             return;
         }
 
-        const ix = getUpdateAdminInstruction(
+        const ix = await getUpdateAdminInstructionAsync(
             {
                 admin: signer,
                 newAdmin: signer,
