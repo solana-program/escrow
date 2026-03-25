@@ -2398,10 +2398,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
+            "docs": [
+              "Escrow Program ID (this program)"
+            ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",

@@ -281,10 +281,7 @@ pub enum EscrowProgramInstruction {
         name = "event_authority",
         default_value = pda("event_authority", [])
     ))]
-    #[codama(account(
-        name = "escrow_program",
-        default_value = public_key("Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg")
-    ))]
+    #[codama(account(name = "escrow_program", optional, docs = "Escrow Program ID (this program)"))]
     SetArbiter {
         /// Bump for extensions PDA
         #[codama(default_value = account_bump("extensions"))]
