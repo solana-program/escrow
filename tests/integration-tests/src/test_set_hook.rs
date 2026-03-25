@@ -1,9 +1,12 @@
 use crate::{
-    fixtures::{AddTimelockFixture, CreateEscrowFixture, SetHookFixture, SetImmutableFixture},
+    fixtures::{
+        AddBlockTokenExtensionsFixture, AddTimelockFixture, CreateEscrowFixture, SetHookFixture, SetImmutableFixture,
+        UnblockTokenExtensionFixture,
+    },
     utils::{
-        assert_escrow_error, assert_extensions_header, assert_hook_extension, assert_instruction_error,
-        assert_timelock_extension, find_escrow_pda, find_extensions_pda, test_empty_data, test_missing_signer,
-        test_not_writable, test_truncated_data, test_wrong_account, test_wrong_current_program,
+        assert_block_token_extensions_extension, assert_escrow_error, assert_extensions_header, assert_hook_extension,
+        assert_instruction_error, assert_timelock_extension, find_escrow_pda, find_extensions_pda, test_empty_data,
+        test_missing_signer, test_not_writable, test_truncated_data, test_wrong_account, test_wrong_current_program,
         test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
@@ -249,6 +252,41 @@ fn test_set_hook_then_add_timelock() {
     assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 2);
     assert_hook_extension(&ctx, &extensions_pda, &hook_program);
     assert_timelock_extension(&ctx, &extensions_pda, 7200);
+}
+
+#[test]
+fn test_set_hook_after_blocked_extension_shrink_keeps_tlv_parseable() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
+
+    AddBlockTokenExtensionsFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), 1u16)
+        .send_expect_success(&mut ctx);
+    AddBlockTokenExtensionsFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), 2u16)
+        .send_expect_success(&mut ctx);
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_block_token_extensions_extension(&ctx, &extensions_pda, &[1u16, 2u16]);
+
+    // This path calls update_extension with smaller data (2 entries -> 1 entry).
+    UnblockTokenExtensionFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), 1u16)
+        .send_expect_success(&mut ctx);
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_block_token_extensions_extension(&ctx, &extensions_pda, &[2u16]);
+
+    // Use deterministic bytes so stale-data parsing bugs are reproducible.
+    let hook_program = Pubkey::new_from_array([0xAA; 32]);
+    let hook_ix = SetHookFixture::build_with_escrow(&mut ctx, escrow_pda, admin, hook_program);
+    hook_ix.send_expect_success(&mut ctx);
+
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 2);
+    assert_block_token_extensions_extension(&ctx, &extensions_pda, &[2u16]);
+    assert_hook_extension(&ctx, &extensions_pda, &hook_program);
 }
 
 #[test]
