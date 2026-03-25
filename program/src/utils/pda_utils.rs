@@ -106,3 +106,26 @@ pub fn create_pda_account_idempotent<const N: usize>(
             .invoke_signed(&signers)
     }
 }
+
+/// Resize an initialized PDA account to an exact size.
+///
+/// Ensures rent-exempt balance for growth and truncates for shrink, so callers
+/// can rely on the account length matching `space` exactly.
+pub fn resize_pda_account(payer: &AccountView, pda_account: &AccountView, space: usize) -> ProgramResult {
+    if pda_account.data_len() == 0 {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let rent = Rent::get()?;
+    let required_lamports = rent.try_minimum_balance(space).unwrap().max(1);
+    let additional_lamports = required_lamports.saturating_sub(pda_account.lamports());
+    if additional_lamports > 0 {
+        Transfer { from: payer, to: pda_account, lamports: additional_lamports }.invoke()?;
+    }
+
+    if pda_account.data_len() != space {
+        pda_account.resize(space)?;
+    }
+
+    Ok(())
+}

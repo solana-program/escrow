@@ -5,8 +5,7 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 
 use crate::state::extensions::TimelockData;
 use crate::traits::{AccountSerialize, Discriminator, EscrowAccountDiscriminators, PdaSeeds, Versioned};
-use crate::utils::{create_pda_account_idempotent, TlvReader};
-use crate::ID as ESCROW_PROGRAM_ID;
+use crate::utils::{create_pda_account_idempotent, resize_pda_account, TlvReader};
 use crate::{assert_no_padding, require_len, validate_discriminator};
 
 /// Extension type discriminators for TLV-encoded extension data
@@ -189,12 +188,11 @@ pub fn append_extension<const N: usize>(
 ///
 /// Finds the extension by type, replaces its data, and resizes account if needed.
 /// Returns error if the extension type doesn't exist.
-pub fn update_extension<const N: usize>(
+pub fn update_extension(
     payer: &AccountView,
     extensions: &AccountView,
     ext_type: ExtensionType,
     new_tlv: &[u8],
-    pda_signer_seeds: [Seed; N],
 ) -> ProgramResult {
     let current_data_len = extensions.data_len();
     if current_data_len == 0 {
@@ -246,8 +244,8 @@ pub fn update_extension<const N: usize>(
     // Calculate required size
     let required_size = EscrowExtensionsHeader::LEN + new_tlv_data.len();
 
-    // Resize account if needed
-    create_pda_account_idempotent(payer, required_size, &ESCROW_PROGRAM_ID, extensions, pda_signer_seeds)?;
+    // Resize to exact length (handles growth rent top-up and shrink truncation).
+    resize_pda_account(payer, extensions, required_size)?;
 
     // Write data
     let mut data = extensions.try_borrow_mut()?;
@@ -364,7 +362,7 @@ pub fn update_or_append_extension<const N: usize>(
         drop(data);
 
         if extension_exists {
-            update_extension(payer, extensions, ext_type, ext_data, pda_signer_seeds)
+            update_extension(payer, extensions, ext_type, ext_data)
         } else {
             let tlv = build_tlv();
             append_extension(payer, extensions, program_id, bump, ext_type, &tlv, pda_signer_seeds)

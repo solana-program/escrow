@@ -1,5 +1,4 @@
-use alloc::vec::Vec;
-use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, ProgramResult};
+use pinocchio::{account::AccountView, Address, ProgramResult};
 
 use crate::{
     errors::EscrowProgramError,
@@ -31,11 +30,6 @@ pub fn process_unblock_token_extension(
     let extensions_pda = ExtensionsPda::new(ix.accounts.escrow.address());
     extensions_pda.validate_pda(ix.accounts.extensions, program_id, ix.data.extensions_bump)?;
 
-    // Get seeds for PDA operations
-    let extensions_bump_seed = [ix.data.extensions_bump];
-    let extensions_seeds: Vec<Seed> = extensions_pda.seeds_with_bump(&extensions_bump_seed);
-    let extensions_seeds_array: [Seed; 3] = extensions_seeds.try_into().map_err(|_| ProgramError::InvalidArgument)?;
-
     // Read existing BlockedTokenExtensions data if present
     let mut blocked_token_extensions = {
         if ix.accounts.extensions.data_len() == 0 {
@@ -57,7 +51,6 @@ pub fn process_unblock_token_extension(
             ix.accounts.extensions,
             ExtensionType::BlockedTokenExtensions,
             &blocked_token_extensions.to_bytes(),
-            extensions_seeds_array,
         )?;
     }
 
