@@ -761,8 +761,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -773,13 +777,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -895,8 +896,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -907,13 +912,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1038,8 +1040,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -1050,13 +1056,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1360,8 +1363,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -1372,13 +1379,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1490,8 +1494,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -1502,13 +1510,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1734,8 +1739,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -1746,13 +1755,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -1970,8 +1976,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -1982,13 +1992,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -2121,8 +2128,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -2133,13 +2144,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -2242,8 +2250,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "docs": [
               "Event authority PDA for CPI event emission"
@@ -2254,13 +2266,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
             "docs": [
-              "Escrow program for CPI event emission"
+              "Escrow Program ID (this program)"
             ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
@@ -2376,8 +2385,12 @@
           },
           {
             "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Eq63FWYo9DXgwoTnpK9gjp7BH4PyhSPo11zEF9FK7f4M"
+              "kind": "pdaValueNode",
+              "pda": {
+                "kind": "pdaLinkNode",
+                "name": "eventAuthority"
+              },
+              "seeds": []
             },
             "isSigner": false,
             "isWritable": false,
@@ -2385,10 +2398,10 @@
             "name": "eventAuthority"
           },
           {
-            "defaultValue": {
-              "kind": "publicKeyValueNode",
-              "publicKey": "Escrowae7RaUfNn4oEZHywMXE5zWzYCXenwrCDaEoifg"
-            },
+            "docs": [
+              "Escrow Program ID (this program)"
+            ],
+            "isOptional": true,
             "isSigner": false,
             "isWritable": false,
             "kind": "instructionAccountNode",
