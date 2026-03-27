@@ -6,7 +6,7 @@ use crate::{
         InstructionTestFixture, TestContext, TestInstruction, RANDOM_PUBKEY,
     },
 };
-use escrow_program_client::instructions::{AllowMintBuilder, BlockMintBuilder};
+use escrow_program_client::instructions::{AllowMintBuilder, BlockMintBuilder, SetImmutableBuilder};
 use solana_sdk::{instruction::InstructionError, signature::Signer};
 use spl_associated_token_account::get_associated_token_address;
 
@@ -59,6 +59,20 @@ fn test_block_mint_wrong_admin() {
 
     let error = test_ix.send_expect_error(&mut ctx);
     assert_escrow_error(error, EscrowError::InvalidAdmin);
+}
+
+#[test]
+fn test_block_mint_succeeds_when_escrow_is_immutable() {
+    let mut ctx = TestContext::new();
+    let setup = BlockMintSetup::new(&mut ctx);
+
+    let set_immutable_ix =
+        SetImmutableBuilder::new().admin(setup.admin.pubkey()).escrow(setup.escrow_pda).instruction();
+    ctx.send_transaction(set_immutable_ix, &[&setup.admin]).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+    assert_account_not_exists(&ctx, &setup.allowed_mint_pda);
 }
 
 #[test]

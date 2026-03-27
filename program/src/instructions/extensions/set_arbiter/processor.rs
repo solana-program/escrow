@@ -4,15 +4,14 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 use crate::{
     events::ArbiterSetEvent,
     instructions::SetArbiter,
-    state::{append_extension, ArbiterData, Escrow, ExtensionType, ExtensionsPda},
-    traits::{EventSerialize, PdaSeeds},
-    utils::{emit_event, TlvWriter},
+    state::{update_or_append_extension, ArbiterData, Escrow, ExtensionType, ExtensionsPda},
+    traits::{EventSerialize, ExtensionData, PdaSeeds},
+    utils::emit_event,
 };
 
 /// Processes the SetArbiter instruction.
 ///
 /// Sets the arbiter on an escrow. Creates extensions PDA if it doesn't exist.
-/// The arbiter is immutable — this instruction will fail if an arbiter is already set.
 pub fn process_set_arbiter(program_id: &Address, accounts: &[AccountView], instruction_data: &[u8]) -> ProgramResult {
     let ix = SetArbiter::try_from((instruction_data, accounts))?;
 
@@ -20,28 +19,28 @@ pub fn process_set_arbiter(program_id: &Address, accounts: &[AccountView], instr
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
+    escrow.require_mutable()?;
 
     // Validate extensions PDA
     let extensions_pda = ExtensionsPda::new(ix.accounts.escrow.address());
     extensions_pda.validate_pda(ix.accounts.extensions, program_id, ix.data.extensions_bump)?;
 
-    // Build TLV data
+    // Build extension data
     let arbiter = ArbiterData::new(*ix.accounts.arbiter.address());
-    let mut tlv_writer = TlvWriter::new();
-    tlv_writer.write_arbiter(&arbiter);
+    let arbiter_bytes = arbiter.to_bytes();
 
-    // Get seeds and append extension (fails if arbiter already exists, enforcing immutability)
+    // Get seeds and append/update extension
     let extensions_bump_seed = [ix.data.extensions_bump];
     let extensions_seeds: Vec<Seed> = extensions_pda.seeds_with_bump(&extensions_bump_seed);
     let extensions_seeds_array: [Seed; 3] = extensions_seeds.try_into().map_err(|_| ProgramError::InvalidArgument)?;
 
-    append_extension(
+    update_or_append_extension(
         ix.accounts.payer,
         ix.accounts.extensions,
         program_id,
         ix.data.extensions_bump,
         ExtensionType::Arbiter,
-        &tlv_writer.into_bytes(),
+        &arbiter_bytes,
         extensions_seeds_array,
     )?;
 

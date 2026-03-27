@@ -1,10 +1,10 @@
 use crate::{
-    fixtures::{AddTimelockFixture, CreateEscrowFixture},
+    fixtures::{AddTimelockFixture, CreateEscrowFixture, SetImmutableFixture},
     utils::{
-        assert_extensions_header, assert_instruction_error, assert_timelock_extension, find_escrow_pda,
-        find_extensions_pda, test_empty_data, test_missing_signer, test_not_writable, test_truncated_data,
-        test_wrong_account, test_wrong_current_program, test_wrong_system_program, InstructionTestFixture, TestContext,
-        RANDOM_PUBKEY,
+        assert_escrow_error, assert_extensions_header, assert_instruction_error, assert_timelock_extension,
+        find_escrow_pda, find_extensions_pda, test_empty_data, test_missing_signer, test_not_writable,
+        test_truncated_data, test_wrong_account, test_wrong_current_program, test_wrong_system_program, EscrowError,
+        InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
 use solana_sdk::{instruction::InstructionError, signature::Signer};
@@ -95,7 +95,7 @@ fn test_add_timelock_escrow_not_owned_by_program() {
 }
 
 #[test]
-fn test_add_timelock_duplicate_extension() {
+fn test_add_timelock_fails_when_escrow_is_immutable() {
     let mut ctx = TestContext::new();
 
     let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
@@ -104,13 +104,37 @@ fn test_add_timelock_duplicate_extension() {
     escrow_ix.send_expect_success(&mut ctx);
 
     let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let set_immutable_ix = SetImmutableFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone());
+    set_immutable_ix.send_expect_success(&mut ctx);
+
+    let add_timelock_ix = AddTimelockFixture::build_with_escrow(&mut ctx, escrow_pda, admin, 3600);
+    let error = add_timelock_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::EscrowImmutable);
+}
+
+#[test]
+fn test_add_timelock_updates_existing_extension() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let (extensions_pda, extensions_bump) = find_extensions_pda(&escrow_pda);
 
     let first_ix = AddTimelockFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone(), 3600);
     first_ix.send_expect_success(&mut ctx);
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_timelock_extension(&ctx, &extensions_pda, 3600);
 
     let second_ix = AddTimelockFixture::build_with_escrow(&mut ctx, escrow_pda, admin, 7200);
-    let error = second_ix.send_expect_error(&mut ctx);
-    assert_instruction_error(error, InstructionError::AccountAlreadyInitialized);
+    second_ix.send_expect_success(&mut ctx);
+
+    // Updating timelock should replace value in place without increasing count.
+    assert_extensions_header(&ctx, &extensions_pda, extensions_bump, 1);
+    assert_timelock_extension(&ctx, &extensions_pda, 7200);
 }
 
 // ============================================================================

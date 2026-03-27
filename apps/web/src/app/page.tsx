@@ -9,24 +9,30 @@ import { QuickDefaults } from '@/components/QuickDefaults';
 import { RecentTransactions } from '@/components/RecentTransactions';
 import { CreateEscrow } from '@/components/instructions/CreateEscrow';
 import { UpdateAdmin } from '@/components/instructions/UpdateAdmin';
+import { SetImmutable } from '@/components/instructions/SetImmutable';
 import { AllowMint } from '@/components/instructions/AllowMint';
 import { BlockMint } from '@/components/instructions/BlockMint';
 import { AddTimelock } from '@/components/instructions/AddTimelock';
 import { SetHook } from '@/components/instructions/SetHook';
 import { BlockTokenExtension } from '@/components/instructions/BlockTokenExtension';
 import { SetArbiter } from '@/components/instructions/SetArbiter';
+import { RemoveExtension } from '@/components/instructions/RemoveExtension';
+import { UnblockTokenExtension } from '@/components/instructions/UnblockTokenExtension';
 import { Deposit } from '@/components/instructions/Deposit';
 import { Withdraw } from '@/components/instructions/Withdraw';
 
 type InstructionId =
     | 'createEscrow'
     | 'updateAdmin'
+    | 'setImmutable'
     | 'allowMint'
     | 'blockMint'
     | 'addTimelock'
     | 'setHook'
     | 'blockTokenExtension'
+    | 'unblockTokenExtension'
     | 'setArbiter'
+    | 'removeExtension'
     | 'deposit'
     | 'withdraw';
 
@@ -39,6 +45,7 @@ const NAV: {
         items: [
             { id: 'createEscrow', label: 'Create Escrow' },
             { id: 'updateAdmin', label: 'Update Admin' },
+            { id: 'setImmutable', label: 'Set Immutable' },
             { id: 'allowMint', label: 'Allow Mint' },
             { id: 'blockMint', label: 'Block Mint' },
         ],
@@ -49,7 +56,9 @@ const NAV: {
             { id: 'addTimelock', label: 'Add Timelock' },
             { id: 'setHook', label: 'Set Hook' },
             { id: 'blockTokenExtension', label: 'Block Token Ext' },
+            { id: 'unblockTokenExtension', label: 'Unblock Token Ext' },
             { id: 'setArbiter', label: 'Set Arbiter' },
+            { id: 'removeExtension', label: 'Remove Extension' },
         ],
     },
     {
@@ -64,12 +73,15 @@ const NAV: {
 const PANELS: Record<InstructionId, { title: string; component: React.ComponentType }> = {
     createEscrow: { title: 'Create Escrow', component: CreateEscrow },
     updateAdmin: { title: 'Update Admin', component: UpdateAdmin },
+    setImmutable: { title: 'Set Immutable', component: SetImmutable },
     allowMint: { title: 'Allow Mint', component: AllowMint },
     blockMint: { title: 'Block Mint', component: BlockMint },
     addTimelock: { title: 'Add Timelock', component: AddTimelock },
     setHook: { title: 'Set Hook', component: SetHook },
     blockTokenExtension: { title: 'Block Token Extension', component: BlockTokenExtension },
+    unblockTokenExtension: { title: 'Unblock Token Extension', component: UnblockTokenExtension },
     setArbiter: { title: 'Set Arbiter', component: SetArbiter },
+    removeExtension: { title: 'Remove Extension', component: RemoveExtension },
     deposit: { title: 'Deposit', component: Deposit },
     withdraw: { title: 'Withdraw', component: Withdraw },
 };

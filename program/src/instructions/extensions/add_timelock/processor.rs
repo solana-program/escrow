@@ -4,9 +4,9 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 use crate::{
     events::TimelockAddedEvent,
     instructions::AddTimelock,
-    state::{append_extension, Escrow, ExtensionType, ExtensionsPda, TimelockData},
-    traits::{EventSerialize, PdaSeeds},
-    utils::{emit_event, TlvWriter},
+    state::{update_or_append_extension, Escrow, ExtensionType, ExtensionsPda, TimelockData},
+    traits::{EventSerialize, ExtensionData, PdaSeeds},
+    utils::emit_event,
 };
 
 /// Processes the AddTimelock instruction.
@@ -19,28 +19,28 @@ pub fn process_add_timelock(program_id: &Address, accounts: &[AccountView], inst
     let escrow_data = ix.accounts.escrow.try_borrow()?;
     let escrow = Escrow::from_account(&escrow_data, ix.accounts.escrow, program_id)?;
     escrow.validate_admin(ix.accounts.admin.address())?;
+    escrow.require_mutable()?;
 
     // Validate extensions PDA
     let extensions_pda = ExtensionsPda::new(ix.accounts.escrow.address());
     extensions_pda.validate_pda(ix.accounts.extensions, program_id, ix.data.extensions_bump)?;
 
-    // Build TLV data
+    // Build extension data
     let timelock = TimelockData::new(ix.data.lock_duration);
-    let mut tlv_writer = TlvWriter::new();
-    tlv_writer.write_timelock(&timelock);
+    let timelock_bytes = timelock.to_bytes();
 
-    // Get seeds and append extension
+    // Get seeds and append/update extension
     let extensions_bump_seed = [ix.data.extensions_bump];
     let extensions_seeds: Vec<Seed> = extensions_pda.seeds_with_bump(&extensions_bump_seed);
     let extensions_seeds_array: [Seed; 3] = extensions_seeds.try_into().map_err(|_| ProgramError::InvalidArgument)?;
 
-    append_extension(
+    update_or_append_extension(
         ix.accounts.payer,
         ix.accounts.extensions,
         program_id,
         ix.data.extensions_bump,
         ExtensionType::Timelock,
-        &tlv_writer.into_bytes(),
+        &timelock_bytes,
         extensions_seeds_array,
     )?;
 

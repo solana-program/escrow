@@ -1,5 +1,8 @@
 use crate::{
-    fixtures::{DepositFixture, DepositSetup, DEFAULT_DEPOSIT_AMOUNT},
+    fixtures::{
+        AddBlockTokenExtensionsFixture, AllowMintSetup, DepositFixture, DepositSetup, UnblockTokenExtensionFixture,
+        DEFAULT_DEPOSIT_AMOUNT,
+    },
     utils::{
         assert_custom_error, assert_escrow_error, assert_instruction_error, find_receipt_pda, test_empty_data,
         test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program, test_wrong_owner,
@@ -8,7 +11,14 @@ use crate::{
     },
 };
 use escrow_program_client::instructions::DepositBuilder;
-use solana_sdk::{instruction::InstructionError, pubkey::Pubkey, signature::Signer};
+use solana_sdk::{
+    account::Account,
+    instruction::{AccountMeta, InstructionError},
+    pubkey::Pubkey,
+    signature::{Keypair, Signer},
+};
+use spl_token_2022::extension::ExtensionType;
+use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 
 // ============================================================================
 // Error Tests - Using Generic Test Helpers
@@ -81,6 +91,20 @@ fn test_deposit_wrong_token_program() {
 }
 
 #[test]
+fn test_deposit_mint_owner_mismatch_token_program() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+
+    let mut mint_account = ctx.get_account(&setup.mint.pubkey()).expect("Mint account should exist");
+    mint_account.owner = TOKEN_2022_PROGRAM_ID;
+    ctx.svm.set_account(setup.mint.pubkey(), mint_account).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
 fn test_deposit_wrong_escrow_owner() {
     let mut ctx = TestContext::new();
     test_wrong_owner::<DepositFixture>(&mut ctx, 2);
@@ -90,6 +114,148 @@ fn test_deposit_wrong_escrow_owner() {
 fn test_deposit_wrong_allowed_mint_owner() {
     let mut ctx = TestContext::new();
     test_wrong_owner::<DepositFixture>(&mut ctx, 3);
+}
+
+#[test]
+fn test_deposit_succeeds_when_escrow_is_mutable() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+    setup.build_instruction(&ctx).send_expect_success(&mut ctx);
+
+    let depositor = ctx.create_funded_keypair();
+    let depositor_token_account =
+        ctx.create_token_account_with_balance(&depositor.pubkey(), &setup.mint_pubkey, DEFAULT_DEPOSIT_AMOUNT * 10);
+    let initial_depositor_balance = ctx.get_token_balance(&depositor_token_account);
+    let initial_vault_balance = ctx.get_token_balance(&setup.vault);
+    let receipt_seed = Keypair::new();
+    let (receipt_pda, bump) =
+        find_receipt_pda(&setup.escrow_pda, &depositor.pubkey(), &setup.mint_pubkey, &receipt_seed.pubkey());
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(receipt_seed.pubkey())
+        .receipt(receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(depositor_token_account)
+        .mint(setup.mint_pubkey)
+        .token_program(setup.token_program)
+        .extensions(setup.escrow_extensions_pda)
+        .bump(bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    ctx.send_transaction(instruction, &[&depositor, &receipt_seed]).unwrap();
+
+    let final_depositor_balance = ctx.get_token_balance(&depositor_token_account);
+    let final_vault_balance = ctx.get_token_balance(&setup.vault);
+    assert_eq!(final_depositor_balance, initial_depositor_balance - DEFAULT_DEPOSIT_AMOUNT);
+    assert_eq!(final_vault_balance, initial_vault_balance + DEFAULT_DEPOSIT_AMOUNT);
+
+    let receipt_account = ctx.get_account(&receipt_pda).expect("Deposit receipt should exist");
+    assert!(!receipt_account.data.is_empty());
+}
+
+#[test]
+fn test_deposit_initialized_extensions_wrong_owner() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
+
+    let mut extensions_account = ctx.get_account(&setup.extensions_pda).expect("Extensions account should exist");
+    extensions_account.owner = Pubkey::new_unique();
+    ctx.svm.set_account(setup.extensions_pda, extensions_account).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
+fn test_deposit_rejects_newly_blocked_mint_extension() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::builder(&mut ctx).mint_extension(ExtensionType::MetadataPointer).build();
+
+    setup.build_instruction(&ctx).send_expect_success(&mut ctx);
+
+    let block_extension_ix = AddBlockTokenExtensionsFixture::build_with_escrow(
+        &mut ctx,
+        setup.escrow_pda,
+        setup.admin.insecure_clone(),
+        ExtensionType::MetadataPointer as u16,
+    );
+    block_extension_ix.send_expect_success(&mut ctx);
+
+    let depositor = ctx.create_funded_keypair();
+    let depositor_token_account =
+        ctx.create_token_2022_account_with_balance(&depositor.pubkey(), &setup.mint_pubkey, DEFAULT_DEPOSIT_AMOUNT);
+    let receipt_seed = Keypair::new();
+    let (receipt_pda, bump) =
+        find_receipt_pda(&setup.escrow_pda, &depositor.pubkey(), &setup.mint_pubkey, &receipt_seed.pubkey());
+
+    let instruction = DepositBuilder::new()
+        .payer(ctx.payer.pubkey())
+        .depositor(depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .allowed_mint(setup.allowed_mint_pda)
+        .receipt_seed(receipt_seed.pubkey())
+        .receipt(receipt_pda)
+        .vault(setup.vault)
+        .depositor_token_account(depositor_token_account)
+        .mint(setup.mint_pubkey)
+        .token_program(setup.token_program)
+        .extensions(setup.escrow_extensions_pda)
+        .bump(bump)
+        .amount(DEFAULT_DEPOSIT_AMOUNT)
+        .instruction();
+
+    let error = ctx.send_transaction_expect_error(instruction, &[&depositor, &receipt_seed]);
+    assert_escrow_error(error, EscrowError::MintNotAllowed);
+}
+
+#[test]
+fn test_deposit_allows_previously_unblocked_mint_extension() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::builder(&mut ctx).mint_extension(ExtensionType::MetadataPointer).build();
+
+    AddBlockTokenExtensionsFixture::build_with_escrow(
+        &mut ctx,
+        setup.escrow_pda,
+        setup.admin.insecure_clone(),
+        ExtensionType::MetadataPointer as u16,
+    )
+    .send_expect_success(&mut ctx);
+
+    UnblockTokenExtensionFixture::build_with_escrow(
+        &mut ctx,
+        setup.escrow_pda,
+        setup.admin.insecure_clone(),
+        ExtensionType::MetadataPointer as u16,
+    )
+    .send_expect_success(&mut ctx);
+
+    setup.build_instruction(&ctx).send_expect_success(&mut ctx);
+}
+
+#[test]
+fn test_deposit_prefunded_receipt_pda_succeeds() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+
+    // Simulate griefing by pre-funding the receipt PDA before initialization.
+    ctx.svm
+        .set_account(
+            setup.receipt_pda,
+            Account { lamports: 1, data: vec![], owner: Pubkey::default(), executable: false, rent_epoch: 0 },
+        )
+        .unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    let receipt_account = ctx.get_account(&setup.receipt_pda).expect("Deposit receipt should exist");
+    assert!(!receipt_account.data.is_empty());
 }
 
 #[test]
@@ -335,6 +501,22 @@ fn test_deposit_with_hook_rejected() {
     let error = test_ix.send_expect_error(&mut ctx);
 
     assert_custom_error(error, TEST_HOOK_DENY_ERROR);
+}
+
+#[test]
+fn test_deposit_with_hook_extra_signer_is_downgraded() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
+    let extra_signer = ctx.create_funded_keypair();
+
+    let mut test_ix = setup.build_instruction(&ctx);
+    test_ix.instruction.accounts.push(AccountMeta::new_readonly(extra_signer.pubkey(), true));
+    test_ix.signers.push(extra_signer.insecure_clone());
+
+    test_ix.send_expect_success(&mut ctx);
+
+    let receipt_account = ctx.get_account(&setup.receipt_pda).expect("Deposit receipt should exist");
+    assert!(!receipt_account.data.is_empty());
 }
 
 // ============================================================================

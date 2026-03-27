@@ -5,7 +5,7 @@ pub const EXTENSION_TYPE_HOOK: u16 = 1;
 pub const EXTENSION_TYPE_BLOCK_TOKEN_EXTENSIONS: u16 = 2;
 pub const EXTENSION_TYPE_ARBITER: u16 = 3;
 
-pub const ESCROW_EXTENSIONS_DISCRIMINATOR: u8 = 1;
+pub const ESCROW_EXTENSIONS_DISCRIMINATOR: u8 = 2;
 pub const ESCROW_EXTENSIONS_HEADER_LEN: usize = 4; // discriminator + bump + version + extension_count
 
 pub const TIMELOCK_DATA_LEN: usize = 8;

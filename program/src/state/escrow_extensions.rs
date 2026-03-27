@@ -5,8 +5,7 @@ use pinocchio::{account::AccountView, cpi::Seed, error::ProgramError, Address, P
 
 use crate::state::extensions::TimelockData;
 use crate::traits::{AccountSerialize, Discriminator, EscrowAccountDiscriminators, PdaSeeds, Versioned};
-use crate::utils::{create_pda_account_idempotent, TlvReader};
-use crate::ID as ESCROW_PROGRAM_ID;
+use crate::utils::{create_pda_account_idempotent, resize_pda_account, TlvReader};
 use crate::{assert_no_padding, require_len, validate_discriminator};
 
 /// Extension type discriminators for TLV-encoded extension data
@@ -46,7 +45,7 @@ pub const TLV_HEADER_SIZE: usize = 4;
 /// [discriminator: 1][version: 1][header: 2][TLV extensions: variable]
 /// ```
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
-#[codama(field("discriminator", number(u8), default_value = 1))]
+#[codama(field("discriminator", number(u8), default_value = 2))]
 #[codama(discriminator(field = "discriminator"))]
 #[codama(pda = "extensions")]
 #[codama(seed(type = string(utf8), value = "extensions"))]
@@ -86,6 +85,9 @@ impl EscrowExtensionsHeader {
         require_len!(data, Self::LEN);
 
         validate_discriminator!(data, Self::DISCRIMINATOR);
+        if data[1] != Self::VERSION {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         // Skip discriminator (byte 0) and version (byte 1)
         Ok(Self { bump: data[2], extension_count: data[3] })
@@ -186,12 +188,11 @@ pub fn append_extension<const N: usize>(
 ///
 /// Finds the extension by type, replaces its data, and resizes account if needed.
 /// Returns error if the extension type doesn't exist.
-pub fn update_extension<const N: usize>(
+pub fn update_extension(
     payer: &AccountView,
     extensions: &AccountView,
     ext_type: ExtensionType,
     new_tlv: &[u8],
-    pda_signer_seeds: [Seed; N],
 ) -> ProgramResult {
     let current_data_len = extensions.data_len();
     if current_data_len == 0 {
@@ -243,13 +244,83 @@ pub fn update_extension<const N: usize>(
     // Calculate required size
     let required_size = EscrowExtensionsHeader::LEN + new_tlv_data.len();
 
-    // Resize account if needed
-    create_pda_account_idempotent(payer, required_size, &ESCROW_PROGRAM_ID, extensions, pda_signer_seeds)?;
+    // Resize to exact length (handles growth rent top-up and shrink truncation).
+    resize_pda_account(payer, extensions, required_size)?;
 
     // Write data
     let mut data = extensions.try_borrow_mut()?;
     data[..EscrowExtensionsHeader::LEN].copy_from_slice(&header_bytes);
     data[EscrowExtensionsHeader::LEN..required_size].copy_from_slice(&new_tlv_data);
+
+    Ok(())
+}
+
+/// Removes an existing TLV extension entry from the extensions PDA.
+///
+/// Finds the extension by type, removes it from TLV data, decrements extension count,
+/// and shrinks the account data size accordingly.
+/// Returns error if the extension type doesn't exist.
+pub fn remove_extension(extensions: &AccountView, ext_type: ExtensionType) -> ProgramResult {
+    let current_data_len = extensions.data_len();
+    if current_data_len == 0 {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    let data = extensions.try_borrow()?;
+    let header = EscrowExtensionsHeader::from_bytes(&data)?;
+
+    if header.extension_count == 0 {
+        return Err(ProgramError::UninitializedAccount);
+    }
+
+    // Find the extension entry.
+    let mut offset = EscrowExtensionsHeader::LEN;
+    let mut found_offset = None;
+    let mut removed_tlv_len = 0;
+
+    while offset + TLV_HEADER_SIZE <= data.len() {
+        let type_bytes = u16::from_le_bytes([data[offset], data[offset + 1]]);
+        let length = u16::from_le_bytes([data[offset + 2], data[offset + 3]]) as usize;
+
+        if offset + TLV_HEADER_SIZE + length > data.len() {
+            break;
+        }
+
+        if type_bytes == ext_type as u16 {
+            found_offset = Some(offset);
+            removed_tlv_len = TLV_HEADER_SIZE + length;
+            break;
+        }
+
+        offset += TLV_HEADER_SIZE + length;
+    }
+
+    let found_offset = found_offset.ok_or(ProgramError::UninitializedAccount)?;
+    let new_extension_count = header.extension_count.checked_sub(1).ok_or(ProgramError::InvalidAccountData)?;
+
+    // Build new TLV data without the removed extension.
+    let before = data[EscrowExtensionsHeader::LEN..found_offset].to_vec();
+    let after_start = found_offset + removed_tlv_len;
+    let after = data[after_start..].to_vec();
+    let mut new_tlv_data = Vec::with_capacity(before.len() + after.len());
+    new_tlv_data.extend_from_slice(&before);
+    new_tlv_data.extend_from_slice(&after);
+
+    drop(data);
+
+    let required_size = EscrowExtensionsHeader::LEN + new_tlv_data.len();
+
+    // Shrink the account to reclaim unused data bytes.
+    extensions.resize(required_size)?;
+
+    // Write updated header and TLV bytes.
+    let mut data = extensions.try_borrow_mut()?;
+    let new_header = EscrowExtensionsHeader::new(header.bump, new_extension_count);
+    let header_bytes = new_header.to_bytes();
+    data[..EscrowExtensionsHeader::LEN].copy_from_slice(&header_bytes);
+    if !new_tlv_data.is_empty() {
+        data[EscrowExtensionsHeader::LEN..required_size].copy_from_slice(&new_tlv_data);
+    }
 
     Ok(())
 }
@@ -291,7 +362,7 @@ pub fn update_or_append_extension<const N: usize>(
         drop(data);
 
         if extension_exists {
-            update_extension(payer, extensions, ext_type, ext_data, pda_signer_seeds)
+            update_extension(payer, extensions, ext_type, ext_data)
         } else {
             let tlv = build_tlv();
             append_extension(payer, extensions, program_id, bump, ext_type, &tlv, pda_signer_seeds)
@@ -309,6 +380,10 @@ pub fn validate_extensions_pda(escrow: &AccountView, extensions: &AccountView, p
     let expected_bump = extensions_pda.validate_pda_address(extensions, program_id)?;
 
     if extensions.data_len() > 0 {
+        if !extensions.owned_by(program_id) {
+            return Err(ProgramError::InvalidAccountOwner);
+        }
+
         let data = extensions.try_borrow()?;
         let header = EscrowExtensionsHeader::from_bytes(&data)?;
         if header.bump != expected_bump {
@@ -403,6 +478,16 @@ mod tests {
         let parsed = EscrowExtensionsHeader::from_bytes(&bytes).unwrap();
         assert_eq!(parsed.bump, header.bump);
         assert_eq!(parsed.extension_count, header.extension_count);
+    }
+
+    #[test]
+    fn test_header_from_bytes_wrong_version() {
+        let header = EscrowExtensionsHeader::new(100, 2);
+        let mut bytes = header.to_bytes();
+        bytes[1] = EscrowExtensionsHeader::VERSION.wrapping_add(1);
+
+        let result = EscrowExtensionsHeader::from_bytes(&bytes);
+        assert_eq!(result, Err(ProgramError::InvalidAccountData));
     }
 
     #[test]

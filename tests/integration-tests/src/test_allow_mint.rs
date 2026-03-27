@@ -6,8 +6,8 @@ use crate::{
         test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
-use escrow_program_client::instructions::AllowMintBuilder;
-use solana_sdk::{instruction::InstructionError, signature::Signer};
+use escrow_program_client::instructions::{AllowMintBuilder, SetImmutableBuilder};
+use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey, signature::Signer};
 use spl_associated_token_account::get_associated_token_address;
 use spl_token_2022::extension::ExtensionType;
 
@@ -131,6 +131,22 @@ fn test_allow_mint_duplicate() {
     assert!(matches!(error, solana_sdk::transaction::TransactionError::AlreadyProcessed));
 }
 
+#[test]
+fn test_allow_mint_succeeds_when_escrow_is_immutable() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+
+    let set_immutable_ix =
+        SetImmutableBuilder::new().admin(setup.admin.pubkey()).escrow(setup.escrow_pda).instruction();
+    ctx.send_transaction(set_immutable_ix, &[&setup.admin]).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    assert_account_exists(&ctx, &setup.allowed_mint_pda);
+    assert_allowed_mint_account(&ctx, &setup.allowed_mint_pda, setup.allowed_mint_bump);
+}
+
 // ============================================================================
 // Happy Path Test
 // ============================================================================
@@ -139,6 +155,26 @@ fn test_allow_mint_duplicate() {
 fn test_allow_mint_success() {
     let mut ctx = TestContext::new();
     let setup = AllowMintSetup::new(&mut ctx);
+
+    let test_ix = setup.build_instruction(&ctx);
+    test_ix.send_expect_success(&mut ctx);
+
+    assert_account_exists(&ctx, &setup.allowed_mint_pda);
+    assert_allowed_mint_account(&ctx, &setup.allowed_mint_pda, setup.allowed_mint_bump);
+}
+
+#[test]
+fn test_allow_mint_prefunded_allowed_mint_pda_succeeds() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+
+    // Simulate griefing by pre-funding the AllowedMint PDA before initialization.
+    ctx.svm
+        .set_account(
+            setup.allowed_mint_pda,
+            Account { lamports: 1, data: vec![], owner: Pubkey::default(), executable: false, rent_epoch: 0 },
+        )
+        .unwrap();
 
     let test_ix = setup.build_instruction(&ctx);
     test_ix.send_expect_success(&mut ctx);
@@ -234,6 +270,28 @@ fn test_allow_mint_rejects_pausable() {
     assert_escrow_error(error, EscrowError::PausableNotAllowed);
 }
 
+#[test]
+fn test_allow_mint_rejects_transfer_fee_config() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new_with_extension(&mut ctx, ExtensionType::TransferFeeConfig);
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+
+    assert_escrow_error(error, EscrowError::MintNotAllowed);
+}
+
+#[test]
+fn test_allow_mint_rejects_mint_close_authority() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new_with_extension(&mut ctx, ExtensionType::MintCloseAuthority);
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+
+    assert_escrow_error(error, EscrowError::MintNotAllowed);
+}
+
 // ============================================================================
 // Escrow-Specific Blocked Extension Tests
 // ============================================================================
@@ -242,8 +300,9 @@ fn test_allow_mint_rejects_pausable() {
 fn test_allow_mint_rejects_escrow_blocked_extension() {
     let mut ctx = TestContext::new();
 
-    // Create escrow with TransferFeeConfig blocked, then try to allow a mint with that extension
-    let setup = AllowMintSetup::new_with_escrow_blocked_extension(&mut ctx, ExtensionType::TransferFeeConfig);
+    // Create escrow with MetadataPointer blocked, then try to allow a mint with that extension.
+    // MetadataPointer is not globally blocked, so rejection should come from escrow-specific blocklist.
+    let setup = AllowMintSetup::new_with_escrow_blocked_extension(&mut ctx, ExtensionType::MetadataPointer);
 
     let test_ix = setup.build_instruction(&ctx);
     let error = test_ix.send_expect_error(&mut ctx);
@@ -255,12 +314,8 @@ fn test_allow_mint_rejects_escrow_blocked_extension() {
 fn test_allow_mint_accepts_mint_without_escrow_blocked_extension() {
     let mut ctx = TestContext::new();
 
-    // Block TransferFeeConfig, but create a mint with MintCloseAuthority (different extension)
-    let setup = AllowMintSetup::new_with_different_extension_blocked(
-        &mut ctx,
-        ExtensionType::TransferFeeConfig,
-        ExtensionType::MintCloseAuthority,
-    );
+    // Block MetadataPointer, but create a Token-2022 mint without that extension.
+    let setup = AllowMintSetup::builder(&mut ctx).block_extension(ExtensionType::MetadataPointer).token_2022().build();
 
     let test_ix = setup.build_instruction(&ctx);
     test_ix.send_expect_success(&mut ctx);

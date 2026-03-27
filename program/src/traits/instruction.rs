@@ -13,6 +13,9 @@ pub enum EscrowInstructionDiscriminators {
     BlockMint = 7,
     BlockTokenExtension = 8,
     SetArbiter = 9,
+    RemoveExtension = 10,
+    UnblockTokenExtension = 11,
+    SetImmutable = 12,
     EmitEvent = 228,
 }
 
@@ -31,6 +34,9 @@ impl TryFrom<u8> for EscrowInstructionDiscriminators {
             7 => Ok(Self::BlockMint),
             8 => Ok(Self::BlockTokenExtension),
             9 => Ok(Self::SetArbiter),
+            10 => Ok(Self::RemoveExtension),
+            11 => Ok(Self::UnblockTokenExtension),
+            12 => Ok(Self::SetImmutable),
             228 => Ok(Self::EmitEvent),
             _ => Err(ProgramError::InvalidInstructionData),
         }
@@ -147,8 +153,29 @@ mod tests {
     }
 
     #[test]
-    fn test_discriminator_try_from_invalid() {
+    fn test_discriminator_try_from_remove_extension() {
         let result = EscrowInstructionDiscriminators::try_from(10u8);
+        assert!(result.is_ok());
+        assert!(matches!(result.unwrap(), EscrowInstructionDiscriminators::RemoveExtension));
+    }
+
+    #[test]
+    fn test_discriminator_try_from_unblock_token_extension() {
+        let result = EscrowInstructionDiscriminators::try_from(11u8);
+        assert!(result.is_ok());
+        assert!(matches!(result.unwrap(), EscrowInstructionDiscriminators::UnblockTokenExtension));
+    }
+
+    #[test]
+    fn test_discriminator_try_from_set_immutable() {
+        let result = EscrowInstructionDiscriminators::try_from(12u8);
+        assert!(result.is_ok());
+        assert!(matches!(result.unwrap(), EscrowInstructionDiscriminators::SetImmutable));
+    }
+
+    #[test]
+    fn test_discriminator_try_from_invalid() {
+        let result = EscrowInstructionDiscriminators::try_from(13u8);
         assert!(matches!(result, Err(ProgramError::InvalidInstructionData)));
 
         let result = EscrowInstructionDiscriminators::try_from(255u8);

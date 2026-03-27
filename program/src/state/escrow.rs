@@ -20,7 +20,7 @@ use crate::traits::{
 /// # PDA Seeds
 /// `[b"escrow", escrow_seed.as_ref()]`
 #[derive(Clone, Debug, PartialEq, CodamaAccount)]
-#[codama(field("discriminator", number(u8), default_value = 0))]
+#[codama(field("discriminator", number(u8), default_value = 1))]
 #[codama(discriminator(field = "discriminator"))]
 #[codama(seed(type = string(utf8), value = "escrow"))]
 #[codama(seed(name = "escrowSeed", type = public_key))]
@@ -29,9 +29,10 @@ pub struct Escrow {
     pub bump: u8,
     pub escrow_seed: Address,
     pub admin: Address,
+    pub is_immutable: bool,
 }
 
-assert_no_padding!(Escrow, 1 + 32 + 32);
+assert_no_padding!(Escrow, 1 + 32 + 32 + 1);
 
 impl Discriminator for Escrow {
     const DISCRIMINATOR: u8 = EscrowAccountDiscriminators::EscrowDiscriminator as u8;
@@ -42,7 +43,7 @@ impl Versioned for Escrow {
 }
 
 impl AccountSize for Escrow {
-    const DATA_LEN: usize = 1 + 32 + 32; // bump + escrow_seed + admin
+    const DATA_LEN: usize = 1 + 32 + 32 + 1; // bump + escrow_seed + admin + is_immutable
 }
 
 impl AccountDeserialize for Escrow {}
@@ -54,6 +55,7 @@ impl AccountSerialize for Escrow {
         data.push(self.bump);
         data.extend_from_slice(self.escrow_seed.as_ref());
         data.extend_from_slice(self.admin.as_ref());
+        data.push(self.is_immutable as u8);
         data
     }
 }
@@ -81,8 +83,8 @@ impl PdaAccount for Escrow {
 
 impl Escrow {
     #[inline(always)]
-    pub fn new(bump: u8, escrow_seed: Address, admin: Address) -> Self {
-        Self { bump, escrow_seed, admin }
+    pub fn new(bump: u8, escrow_seed: Address, admin: Address, is_immutable: bool) -> Self {
+        Self { bump, escrow_seed, admin, is_immutable }
     }
 
     #[inline(always)]
@@ -102,6 +104,19 @@ impl Escrow {
             return Err(EscrowProgramError::InvalidAdmin.into());
         }
         Ok(())
+    }
+
+    #[inline(always)]
+    pub fn require_mutable(&self) -> Result<(), ProgramError> {
+        if self.is_immutable {
+            return Err(EscrowProgramError::EscrowImmutable.into());
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    pub fn set_immutable(&self) -> Self {
+        Self::new(self.bump, self.escrow_seed, self.admin, true)
     }
 
     /// Execute a CPI with this escrow PDA as signer
@@ -124,7 +139,7 @@ mod tests {
     fn create_test_escrow() -> Escrow {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
-        Escrow::new(255, escrow_seed, admin)
+        Escrow::new(255, escrow_seed, admin, false)
     }
 
     #[test]
@@ -132,11 +147,12 @@ mod tests {
         let escrow_seed = Address::new_from_array([1u8; 32]);
         let admin = Address::new_from_array([2u8; 32]);
 
-        let escrow = Escrow::new(200, escrow_seed, admin);
+        let escrow = Escrow::new(200, escrow_seed, admin, false);
 
         assert_eq!(escrow.bump, 200);
         assert_eq!(escrow.escrow_seed, escrow_seed);
         assert_eq!(escrow.admin, admin);
+        assert!(!escrow.is_immutable);
     }
 
     #[test]
@@ -165,6 +181,7 @@ mod tests {
         assert_eq!(bytes[0], 255); // bump
         assert_eq!(&bytes[1..33], &[1u8; 32]); // escrow_seed
         assert_eq!(&bytes[33..65], &[2u8; 32]); // admin
+        assert_eq!(bytes[65], 0); // is_immutable
     }
 
     #[test]
@@ -176,6 +193,7 @@ mod tests {
         assert_eq!(bytes[0], Escrow::DISCRIMINATOR);
         assert_eq!(bytes[1], Escrow::VERSION); // version auto-prepended
         assert_eq!(bytes[2], 255); // bump
+        assert_eq!(bytes[67], 0); // is_immutable
     }
 
     #[test]
@@ -188,6 +206,7 @@ mod tests {
         assert_eq!(deserialized.bump, escrow.bump);
         assert_eq!(deserialized.escrow_seed, escrow.escrow_seed);
         assert_eq!(deserialized.admin, escrow.admin);
+        assert_eq!(deserialized.is_immutable, escrow.is_immutable);
     }
 
     #[test]
@@ -199,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_escrow_from_bytes_wrong_discriminator() {
-        let mut bytes = [0u8; 67];
+        let mut bytes = [0u8; 68];
         bytes[0] = 99; // wrong discriminator
         let result = Escrow::from_bytes(&bytes);
         assert_eq!(result, Err(ProgramError::InvalidAccountData));
@@ -233,6 +252,23 @@ mod tests {
         assert_eq!(dest[0], Escrow::DISCRIMINATOR);
         assert_eq!(dest[1], Escrow::VERSION); // version
         assert_eq!(dest[2], escrow.bump);
+    }
+
+    #[test]
+    fn test_set_immutable_sets_flag() {
+        let escrow = create_test_escrow();
+        let immutable = escrow.set_immutable();
+        assert!(immutable.is_immutable);
+        assert_eq!(immutable.bump, escrow.bump);
+        assert_eq!(immutable.admin, escrow.admin);
+        assert_eq!(immutable.escrow_seed, escrow.escrow_seed);
+    }
+
+    #[test]
+    fn test_require_mutable_fails_when_immutable() {
+        let escrow = Escrow::new(1, Address::new_from_array([1u8; 32]), Address::new_from_array([2u8; 32]), true);
+        let result = escrow.require_mutable();
+        assert_eq!(result, Err(EscrowProgramError::EscrowImmutable.into()));
     }
 
     #[test]

@@ -1,8 +1,12 @@
 pub mod add_timelock;
 pub mod block_token_extension;
+pub mod remove_extension;
 pub mod set_arbiter;
 pub mod set_hook;
+pub mod unblock_token_extension;
 pub use add_timelock::*;
 pub use block_token_extension::*;
+pub use remove_extension::*;
 pub use set_arbiter::*;
 pub use set_hook::*;
+pub use unblock_token_extension::*;

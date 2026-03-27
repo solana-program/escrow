@@ -12,8 +12,9 @@ use solana_sdk::{
     account::Account,
     instruction::{AccountMeta, InstructionError},
     pubkey::Pubkey,
-    signature::Signer,
+    signature::{Keypair, Signer},
 };
+use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 
 // ============================================================================
 // Error Tests - Using Generic Test Helpers
@@ -68,6 +69,20 @@ fn test_withdraw_wrong_token_program() {
 }
 
 #[test]
+fn test_withdraw_mint_owner_mismatch_token_program() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    let mut mint_account = ctx.get_account(&setup.mint.pubkey()).expect("Mint account should exist");
+    mint_account.owner = TOKEN_2022_PROGRAM_ID;
+    ctx.svm.set_account(setup.mint.pubkey(), mint_account).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
 fn test_withdraw_wrong_escrow_owner() {
     let mut ctx = TestContext::new();
     test_wrong_owner::<WithdrawFixture>(&mut ctx, 2);
@@ -77,6 +92,20 @@ fn test_withdraw_wrong_escrow_owner() {
 fn test_withdraw_wrong_receipt_owner() {
     let mut ctx = TestContext::new();
     test_wrong_owner::<WithdrawFixture>(&mut ctx, 4);
+}
+
+#[test]
+fn test_withdraw_initialized_extensions_wrong_owner() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
+
+    let mut extensions_account = ctx.get_account(&setup.extensions_pda).expect("Extensions account should exist");
+    extensions_account.owner = Pubkey::new_unique();
+    ctx.svm.set_account(setup.extensions_pda, extensions_account).unwrap();
+
+    let test_ix = setup.build_instruction(&ctx);
+    let error = test_ix.send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidAccountOwner);
 }
 
 #[test]
@@ -390,9 +419,13 @@ fn test_withdraw_with_hook_success() {
 #[test]
 fn test_withdraw_with_hook_rejected() {
     let mut ctx = TestContext::new();
+    let mut setup = WithdrawSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
 
-    let mut setup = WithdrawSetup::new(&mut ctx);
-    setup.set_hook(&mut ctx, TEST_HOOK_DENY_ID);
+    // Patch the hook extension directly to simulate a deny hook for withdraw-path rejection coverage.
+    let mut extensions_account = ctx.get_account(&setup.extensions_pda).expect("Extensions account should exist");
+    extensions_account.data[8..40].copy_from_slice(&TEST_HOOK_DENY_ID.to_bytes());
+    ctx.svm.set_account(setup.extensions_pda, extensions_account).unwrap();
+    setup.hook_program = Some(TEST_HOOK_DENY_ID);
 
     let initial_vault_balance = ctx.get_token_balance(&setup.vault);
 
@@ -405,6 +438,20 @@ fn test_withdraw_with_hook_rejected() {
 
     let final_vault_balance = ctx.get_token_balance(&setup.vault);
     assert_eq!(final_vault_balance, initial_vault_balance, "Vault balance should be unchanged");
+}
+
+#[test]
+fn test_withdraw_with_hook_extra_signer_is_downgraded() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new_with_hook(&mut ctx, TEST_HOOK_ALLOW_ID);
+    let extra_signer = ctx.create_funded_keypair();
+
+    let mut test_ix = setup.build_instruction(&ctx);
+    test_ix.instruction.accounts.push(AccountMeta::new_readonly(extra_signer.pubkey(), true));
+    test_ix.signers.push(extra_signer.insecure_clone());
+
+    test_ix.send_expect_success(&mut ctx);
+    assert!(ctx.get_account(&setup.receipt_pda).is_none(), "Receipt should be closed after successful withdraw");
 }
 
 // ============================================================================
@@ -438,6 +485,34 @@ fn test_withdraw_receipt_for_different_escrow_fails() {
     let error = ctx.send_transaction_expect_error(instruction, &[&setup_a.depositor]);
 
     assert_escrow_error(error, EscrowError::InvalidReceiptEscrow);
+}
+
+#[test]
+fn test_withdraw_receipt_mint_mismatch_fails() {
+    let mut ctx = TestContext::new();
+    let setup = WithdrawSetup::new(&mut ctx);
+
+    let second_mint = Keypair::new();
+    ctx.create_mint(&second_mint, &ctx.payer.pubkey(), 6);
+    let second_vault =
+        ctx.create_token_account_with_balance(&setup.escrow_pda, &second_mint.pubkey(), DEFAULT_DEPOSIT_AMOUNT);
+    let second_withdrawer_token_account = ctx.create_token_account(&setup.depositor.pubkey(), &second_mint.pubkey());
+
+    let instruction = WithdrawBuilder::new()
+        .rent_recipient(ctx.payer.pubkey())
+        .withdrawer(setup.depositor.pubkey())
+        .escrow(setup.escrow_pda)
+        .extensions(setup.extensions_pda)
+        .receipt(setup.receipt_pda)
+        .vault(second_vault)
+        .withdrawer_token_account(second_withdrawer_token_account)
+        .mint(second_mint.pubkey())
+        .token_program(setup.token_program)
+        .instruction();
+
+    let error = ctx.send_transaction_expect_error(instruction, &[&setup.depositor]);
+    assert_instruction_error(error, InstructionError::InvalidAccountData);
+    assert!(ctx.get_account(&setup.receipt_pda).is_some(), "Receipt should remain after rejected withdraw");
 }
 
 // ============================================================================
@@ -585,8 +660,9 @@ fn test_withdraw_with_arbiter_success() {
 #[test]
 fn test_withdraw_with_arbiter_missing_signer() {
     let mut ctx = TestContext::new();
-    let mut setup = WithdrawSetup::new(&mut ctx);
-    let arbiter = setup.set_arbiter(&mut ctx);
+    let setup = WithdrawSetup::new_with_arbiter(&mut ctx);
+    let arbiter =
+        setup.arbiter.as_ref().expect("arbiter should be configured by WithdrawSetup::new_with_arbiter").pubkey();
 
     // Build instruction manually without arbiter as signer
     let mut builder = WithdrawBuilder::new();
@@ -602,7 +678,7 @@ fn test_withdraw_with_arbiter_missing_signer() {
         .token_program(setup.token_program);
 
     // Add arbiter as non-signer (should fail)
-    builder.add_remaining_account(AccountMeta::new_readonly(arbiter.pubkey(), false));
+    builder.add_remaining_account(AccountMeta::new_readonly(arbiter, false));
 
     let instruction = builder.instruction();
     let test_ix = TestInstruction { instruction, signers: vec![setup.depositor.insecure_clone()], name: "Withdraw" };
@@ -614,8 +690,7 @@ fn test_withdraw_with_arbiter_missing_signer() {
 #[test]
 fn test_withdraw_with_arbiter_wrong_address() {
     let mut ctx = TestContext::new();
-    let mut setup = WithdrawSetup::new(&mut ctx);
-    setup.set_arbiter(&mut ctx);
+    let setup = WithdrawSetup::new_with_arbiter(&mut ctx);
 
     // Build instruction with wrong arbiter address
     let wrong_arbiter = ctx.create_funded_keypair();
@@ -648,8 +723,7 @@ fn test_withdraw_with_arbiter_wrong_address() {
 #[test]
 fn test_withdraw_with_arbiter_no_remaining_accounts() {
     let mut ctx = TestContext::new();
-    let mut setup = WithdrawSetup::new(&mut ctx);
-    setup.set_arbiter(&mut ctx);
+    let setup = WithdrawSetup::new_with_arbiter(&mut ctx);
 
     // Build instruction without any remaining accounts (arbiter required but missing)
     let instruction = WithdrawBuilder::new()

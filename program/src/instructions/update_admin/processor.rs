@@ -21,7 +21,8 @@ pub fn process_update_admin(program_id: &Address, accounts: &[AccountView], inst
 
     // Copy values we need for the update
     let old_admin = escrow.admin;
-    let updated_escrow = Escrow::new(escrow.bump, escrow.escrow_seed, *ix.accounts.new_admin.address());
+    let updated_escrow =
+        Escrow::new(escrow.bump, escrow.escrow_seed, *ix.accounts.new_admin.address(), escrow.is_immutable);
     drop(escrow_data);
 
     // Write updated escrow

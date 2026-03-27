@@ -1,12 +1,13 @@
 use crate::{
     fixtures::CreateEscrowFixture,
     utils::{
-        assert_escrow_account, assert_instruction_error, test_empty_data, test_missing_signer, test_not_writable,
-        test_wrong_account, test_wrong_current_program, test_wrong_system_program, InstructionTestFixture, TestContext,
+        assert_escrow_account, assert_escrow_mutability, assert_instruction_error, test_empty_data,
+        test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program,
+        test_wrong_system_program, InstructionTestFixture, TestContext,
     },
 };
 use escrow_program_client::instructions::CreatesEscrowBuilder;
-use solana_sdk::{instruction::InstructionError, signature::Signer};
+use solana_sdk::{account::Account, instruction::InstructionError, pubkey::Pubkey, signature::Signer};
 
 // ============================================================================
 // Error Tests - Using Generic Test Helpers
@@ -92,6 +93,31 @@ fn test_create_escrow_success() {
     test_ix.send_expect_success(&mut ctx);
 
     assert_escrow_account(&ctx, &escrow_pda, &admin_pubkey, bump, &escrow_seed_pubkey);
+    assert_escrow_mutability(&ctx, &escrow_pda, false);
+}
+
+#[test]
+fn test_create_escrow_prefunded_pda_succeeds() {
+    let mut ctx = TestContext::new();
+    let test_ix = CreateEscrowFixture::build_valid(&mut ctx);
+
+    let admin_pubkey = test_ix.signers[0].pubkey();
+    let escrow_seed_pubkey = test_ix.signers[1].pubkey();
+    let escrow_pda = test_ix.instruction.accounts[3].pubkey;
+    let bump = test_ix.instruction.data[1];
+
+    // Simulate griefing by pre-funding the PDA before initialization.
+    ctx.svm
+        .set_account(
+            escrow_pda,
+            Account { lamports: 1, data: vec![], owner: Pubkey::default(), executable: false, rent_epoch: 0 },
+        )
+        .unwrap();
+
+    test_ix.send_expect_success(&mut ctx);
+
+    assert_escrow_account(&ctx, &escrow_pda, &admin_pubkey, bump, &escrow_seed_pubkey);
+    assert_escrow_mutability(&ctx, &escrow_pda, false);
 }
 
 // ============================================================================

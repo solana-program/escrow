@@ -61,6 +61,12 @@ pub fn assert_escrow_account(
     assert_eq!(escrow.escrow_seed.as_ref(), expected_escrow_seed.as_ref());
 }
 
+pub fn assert_escrow_mutability(context: &TestContext, escrow_pda: &Pubkey, expected_is_immutable: bool) {
+    let account = context.get_account(escrow_pda).expect("Escrow account should exist");
+    let escrow = Escrow::from_bytes(&account.data).expect("Should deserialize escrow account");
+    assert_eq!(escrow.is_immutable, expected_is_immutable, "Unexpected escrow mutability for {escrow_pda}");
+}
+
 pub fn assert_extensions_header(
     ctx: &TestContext,
     extensions_pda: &Pubkey,
@@ -133,6 +139,12 @@ pub fn assert_arbiter_extension(ctx: &TestContext, extensions_pda: &Pubkey, expe
 
     let arbiter = Pubkey::new_from_array(tlv_data[0..32].try_into().unwrap());
     assert_eq!(arbiter, *expected_arbiter, "Wrong arbiter");
+}
+
+pub fn assert_extension_missing(ctx: &TestContext, extensions_pda: &Pubkey, extension_type: u16) {
+    let account = ctx.get_account(extensions_pda).expect("Extensions account should exist");
+    let data = &account.data;
+    assert!(find_extension(data, extension_type).is_none(), "Extension type {extension_type} should be absent");
 }
 
 pub fn assert_allowed_mint_account(ctx: &TestContext, allowed_mint_pda: &Pubkey, expected_bump: u8) {

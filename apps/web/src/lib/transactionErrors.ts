@@ -1,6 +1,7 @@
 'use client';
 
 import {
+    ESCROW_PROGRAM_ERROR__ESCROW_IMMUTABLE,
     ESCROW_PROGRAM_ERROR__HOOK_PROGRAM_MISMATCH,
     ESCROW_PROGRAM_ERROR__HOOK_REJECTED,
     ESCROW_PROGRAM_ERROR__INVALID_ADMIN,
@@ -15,6 +16,7 @@ import {
     ESCROW_PROGRAM_ERROR__PERMANENT_DELEGATE_NOT_ALLOWED,
     ESCROW_PROGRAM_ERROR__TIMELOCK_NOT_EXPIRED,
     ESCROW_PROGRAM_ERROR__TOKEN_EXTENSION_ALREADY_BLOCKED,
+    ESCROW_PROGRAM_ERROR__TOKEN_EXTENSION_NOT_BLOCKED,
     ESCROW_PROGRAM_ERROR__ZERO_DEPOSIT_AMOUNT,
 } from '@solana/escrow-program-client';
 
@@ -32,8 +34,10 @@ const ESCROW_PROGRAM_ERROR_MESSAGES: Record<number, string> = {
     [ESCROW_PROGRAM_ERROR__NON_TRANSFERABLE_NOT_ALLOWED]: 'Mint has NonTransferable extension which is not allowed',
     [ESCROW_PROGRAM_ERROR__PAUSABLE_NOT_ALLOWED]: 'Mint has Pausable extension which is not allowed',
     [ESCROW_PROGRAM_ERROR__TOKEN_EXTENSION_ALREADY_BLOCKED]: 'Token extension already blocked',
+    [ESCROW_PROGRAM_ERROR__TOKEN_EXTENSION_NOT_BLOCKED]: 'Token extension is not currently blocked',
     [ESCROW_PROGRAM_ERROR__ZERO_DEPOSIT_AMOUNT]: 'Zero deposit amount',
     [ESCROW_PROGRAM_ERROR__INVALID_ARBITER]: 'Arbiter signer is missing or does not match',
+    [ESCROW_PROGRAM_ERROR__ESCROW_IMMUTABLE]: 'Escrow is immutable and cannot be modified',
 };
 
 const FALLBACK_TX_FAILED_MESSAGE = 'Transaction failed';

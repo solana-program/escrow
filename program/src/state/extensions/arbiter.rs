@@ -6,7 +6,7 @@ use crate::{assert_no_padding, errors::EscrowProgramError, require_len, traits::
 /// Arbiter extension data (stored in TLV format)
 ///
 /// Stores the address of a third-party signer who must authorize withdrawals.
-/// Once set, this is immutable — the arbiter cannot be changed.
+/// The arbiter value can be updated while the escrow remains mutable.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[repr(C)]
 pub struct ArbiterData {

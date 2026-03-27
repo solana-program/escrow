@@ -19,6 +19,7 @@ const EXTENSION_OPTIONS = [
     { label: 'Pausable (25)', value: '25' },
     { label: 'TransferFeeConfig (1)', value: '1' },
     { label: 'MintCloseAuthority (3)', value: '3' },
+    { label: 'MetadataPointer (18)', value: '18' },
 ];
 
 export function BlockTokenExtension() {

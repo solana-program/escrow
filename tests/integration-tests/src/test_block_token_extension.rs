@@ -1,10 +1,10 @@
 use crate::{
-    fixtures::{AddBlockTokenExtensionsFixture, CreateEscrowFixture},
+    fixtures::{AddBlockTokenExtensionsFixture, CreateEscrowFixture, SetImmutableFixture},
     utils::{
-        assert_block_token_extensions_extension, assert_extensions_header, assert_instruction_error, find_escrow_pda,
-        find_extensions_pda, test_empty_data, test_missing_signer, test_not_writable, test_truncated_data,
-        test_wrong_account, test_wrong_current_program, test_wrong_system_program, InstructionTestFixture, TestContext,
-        RANDOM_PUBKEY,
+        assert_block_token_extensions_extension, assert_escrow_error, assert_extensions_header,
+        assert_instruction_error, find_escrow_pda, find_extensions_pda, test_empty_data, test_missing_signer,
+        test_not_writable, test_truncated_data, test_wrong_account, test_wrong_current_program,
+        test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
 use solana_sdk::{instruction::InstructionError, signature::Signer};
@@ -85,6 +85,24 @@ fn test_block_token_extension_escrow_not_owned_by_program() {
 
     let error = test_ix.with_account_at(2, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
+fn test_block_token_extension_fails_when_escrow_is_immutable() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let set_immutable_ix = SetImmutableFixture::build_with_escrow(&mut ctx, escrow_pda, admin.insecure_clone());
+    set_immutable_ix.send_expect_success(&mut ctx);
+
+    let block_ext_ix = AddBlockTokenExtensionsFixture::build_with_escrow(&mut ctx, escrow_pda, admin, 1u16);
+    let error = block_ext_ix.send_expect_error(&mut ctx);
+    assert_escrow_error(error, EscrowError::EscrowImmutable);
 }
 
 #[test]

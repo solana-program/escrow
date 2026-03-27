@@ -1,12 +1,12 @@
 use crate::{
     fixtures::{CreateEscrowFixture, UpdateAdminFixture},
     utils::{
-        assert_escrow_account, assert_instruction_error, find_escrow_pda, test_missing_signer, test_not_writable,
-        test_wrong_account, test_wrong_current_program, InstructionTestFixture, TestContext, TestInstruction,
-        RANDOM_PUBKEY,
+        assert_escrow_account, assert_escrow_mutability, assert_instruction_error, find_escrow_pda,
+        test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program, InstructionTestFixture,
+        TestContext, TestInstruction, RANDOM_PUBKEY,
     },
 };
-use escrow_program_client::instructions::UpdateAdminBuilder;
+use escrow_program_client::instructions::{SetImmutableBuilder, UpdateAdminBuilder};
 use solana_sdk::{
     instruction::InstructionError,
     signature::{Keypair, Signer},
@@ -76,6 +76,29 @@ fn test_update_admin_escrow_not_owned_by_program() {
 
     let error = test_ix.with_account_at(2, RANDOM_PUBKEY).send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidAccountOwner);
+}
+
+#[test]
+fn test_update_admin_succeeds_when_escrow_is_immutable() {
+    let mut ctx = TestContext::new();
+
+    let escrow_ix = CreateEscrowFixture::build_valid(&mut ctx);
+    let admin = escrow_ix.signers[0].insecure_clone();
+    let escrow_seed = escrow_ix.signers[1].pubkey();
+    let bump = escrow_ix.instruction.data[1];
+    escrow_ix.send_expect_success(&mut ctx);
+
+    let (escrow_pda, _) = find_escrow_pda(&escrow_seed);
+    let set_immutable_ix = SetImmutableBuilder::new().admin(admin.pubkey()).escrow(escrow_pda).instruction();
+    ctx.send_transaction(set_immutable_ix, &[&admin]).unwrap();
+
+    let new_admin = Keypair::new();
+    let new_admin_pubkey = new_admin.pubkey();
+    let update_ix = UpdateAdminFixture::build_with_escrow(&mut ctx, escrow_pda, admin, new_admin);
+    update_ix.send_expect_success(&mut ctx);
+
+    assert_escrow_account(&ctx, &escrow_pda, &new_admin_pubkey, bump, &escrow_seed);
+    assert_escrow_mutability(&ctx, &escrow_pda, true);
 }
 
 // ============================================================================

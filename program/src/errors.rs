@@ -64,6 +64,14 @@ pub enum EscrowProgramError {
     /// (14) Arbiter signer is missing or does not match
     #[error("Arbiter signer is missing or does not match")]
     InvalidArbiter,
+
+    /// (15) Token extension is not currently blocked
+    #[error("Token extension is not currently blocked")]
+    TokenExtensionNotBlocked,
+
+    /// (16) Escrow is immutable and cannot be modified
+    #[error("Escrow is immutable and cannot be modified")]
+    EscrowImmutable,
 }
 
 impl From<EscrowProgramError> for ProgramError {
@@ -95,5 +103,9 @@ mod tests {
 
         let error: ProgramError = EscrowProgramError::InvalidWithdrawer.into();
         assert_eq!(error, ProgramError::Custom(5));
+
+        let error: ProgramError = EscrowProgramError::EscrowImmutable.into();
+        assert_eq!(error, ProgramError::Custom(16));
+        assert_eq!(error, ProgramError::Custom(16));
     }
 }
