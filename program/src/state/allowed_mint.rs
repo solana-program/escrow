@@ -65,8 +65,14 @@ impl AllowedMint {
         mint: &Address,
     ) -> Result<&'a Self, ProgramError> {
         let state = Self::from_bytes(data)?;
-        let pda = AllowedMintPda::new(escrow, mint);
-        pda.validate_pda(account, program_id, state.bump)?;
+        let derived = Address::derive_address(
+            &[AllowedMintPda::PREFIX, escrow.as_ref(), mint.as_ref()],
+            Some(state.bump),
+            program_id,
+        );
+        if account.address() != &derived {
+            return Err(ProgramError::InvalidSeeds);
+        }
         Ok(state)
     }
 }
