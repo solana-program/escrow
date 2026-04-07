@@ -124,6 +124,25 @@ impl PdaAccount for Receipt {
     fn bump(&self) -> u8 {
         self.bump
     }
+
+    #[inline(always)]
+    fn validate_self(&self, account: &AccountView, program_id: &Address) -> Result<(), ProgramError> {
+        let derived = Address::derive_address(
+            &[
+                Self::PREFIX,
+                self.escrow.as_ref(),
+                self.depositor.as_ref(),
+                self.mint.as_ref(),
+                self.receipt_seed.as_ref(),
+            ],
+            Some(self.bump),
+            program_id,
+        );
+        if account.address() != &derived {
+            return Err(ProgramError::InvalidSeeds);
+        }
+        Ok(())
+    }
 }
 
 impl Receipt {

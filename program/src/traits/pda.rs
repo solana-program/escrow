@@ -21,20 +21,28 @@ pub trait PdaSeeds {
         Address::find_program_address(&seeds, program_id)
     }
 
-    /// Validate that account matches derived PDA
+    /// Validate that account matches derived PDA using `create_program_address` (~1500 CU).
+    ///
+    /// Cheaper than `find_program_address` since bump is already known.
+    /// Use `validate_self` instead when the bump is stored in the account.
     #[inline(always)]
-    fn validate_pda(&self, account: &AccountView, program_id: &Address, expected_bump: u8) -> Result<(), ProgramError> {
-        let (derived, bump) = self.derive_address(program_id);
-        if bump != expected_bump {
-            return Err(ProgramError::InvalidSeeds);
-        }
+    fn validate_pda(&self, account: &AccountView, program_id: &Address, bump: u8) -> Result<(), ProgramError> {
+        let seeds = self.seeds();
+        let bump_arr = [bump];
+        let mut seeds_with_bump = seeds;
+        seeds_with_bump.push(&bump_arr[..]);
+        let derived =
+            Address::create_program_address(&seeds_with_bump, program_id).map_err(|_| ProgramError::InvalidSeeds)?;
         if account.address() != &derived {
             return Err(ProgramError::InvalidSeeds);
         }
         Ok(())
     }
 
-    /// Validate that account address matches derived PDA, returns canonical bump
+    /// Validate that account address matches derived PDA and return the canonical bump.
+    ///
+    /// Uses `find_program_address` — only call this when the bump is not already known.
+    /// When bump is available, prefer `validate_pda` or `validate_self`.
     #[inline(always)]
     fn validate_pda_address(&self, account: &AccountView, program_id: &Address) -> Result<u8, ProgramError> {
         let (derived, bump) = self.derive_address(program_id);
