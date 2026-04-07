@@ -384,7 +384,6 @@ pub fn validate_extensions_pda(escrow: &AccountView, extensions: &AccountView, p
         let data = extensions.try_borrow()?;
         let header = EscrowExtensionsHeader::from_bytes(&data)?;
 
-        // Use stored bump with derive_address (~85 CU) — off-curve already validated at creation
         let derived =
             Address::derive_address(&[ExtensionsPda::PREFIX, escrow.address().as_ref()], Some(header.bump), program_id);
         if extensions.address() != &derived {
