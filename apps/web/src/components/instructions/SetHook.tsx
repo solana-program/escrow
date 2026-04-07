@@ -75,6 +75,7 @@ export function SetHook() {
                 value={hookProgram}
                 onChange={setHookProgram}
                 placeholder="Program ID implementing the transfer hook"
+                hint="Warning: if this escrow is later set immutable, this hook dependency becomes permanent and hook reverts will block operations."
                 required
             />
             <SendButton sending={sending} />

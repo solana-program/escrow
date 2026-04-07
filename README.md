@@ -30,6 +30,15 @@ A configurable escrow program for Solana that enables receipt-based token deposi
 - **Configurable timelocks** - Set lock durations that must pass before withdrawals
 - **Custom hook programs** - Invoke external programs pre/post deposit and withdrawal
 
+## Hook Warning
+
+If a hook is configured and the escrow is later made immutable, that hook configuration becomes permanent.
+
+- The hook cannot be changed or removed after immutability is set.
+- Hook callbacks run at all four hook points: PreDeposit, PostDeposit, PreWithdraw, PostWithdraw.
+- Any hook revert aborts the escrow instruction.
+- A buggy or malicious hook can permanently block deposit and/or withdraw flows.
+
 ## Account Types
 
 | Account          | PDA Seeds                                            | Description                                                 |

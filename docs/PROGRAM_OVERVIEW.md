@@ -215,6 +215,10 @@ Adds or updates the timelock extension.
 
 Sets the hook program for deposit/withdraw callbacks.
 
+**Warning:**
+
+If an escrow is made immutable after setting a hook, the hook configuration is permanent and cannot be changed or removed.
+
 **Accounts:**
 
 | #   | Name            | Signer | Writable | Description               |
@@ -387,6 +391,12 @@ Withdrawals blocked until `deposited_at + lock_duration`.
 
 Hook receives 1-byte instruction data (hook point) and accounts: escrow, actor, mint, receipt, vault, plus any remaining accounts.
 
+**Warning:**
+
+- Hook execution is fail-closed. Any revert aborts the parent escrow instruction.
+- All four hook points are enforced when a hook is configured.
+- For immutable escrows, hook behavior is permanently embedded.
+
 ---
 
 ### BlockedTokenExtensions (type = 2)
@@ -432,7 +442,7 @@ During `AllowMint`, the program checks if the mint has any blocked Token-2022 ex
 ## Security Considerations
 
 1. **Token-2022 blocking** - PermanentDelegate, NonTransferable, and Pausable are always blocked to prevent token manipulation
-2. **Hook validation** - Hook programs must be passed correctly; mismatches cause HookProgramMismatch error
+2. **Hook validation and liveness dependency** - Hook programs must be passed correctly; mismatches cause HookProgramMismatch, and hook reverts abort escrow operations (`HookRejected`)
 3. **Receipt ownership** - Only the original depositor can withdraw using their receipt
 4. **Timelock enforcement** - Clock sysvar used to verify lock duration has passed
 5. **PDA validation** - All PDAs validated against expected seeds and bumps

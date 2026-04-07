@@ -48,6 +48,10 @@ impl HookData {
 
     /// Validates and invokes the hook program.
     ///
+    /// Important: hook execution is fail-closed. Any hook CPI error aborts the
+    /// parent escrow instruction. If an escrow is set immutable with a hook
+    /// configured, this external dependency is permanently embedded.
+    ///
     /// # Arguments
     /// * `hook_point` - The hook point discriminator
     /// * `remaining_accounts` - Remaining accounts slice: [hook_program, extra_accounts...]
@@ -81,6 +85,7 @@ impl HookData {
             data: &instruction_data,
         };
 
+        // Preserve a stable escrow error surface for all hook CPI failures.
         invoke_with_bounds::<16>(&instruction, &all_accounts).map_err(|_| EscrowProgramError::HookRejected.into())
     }
 }

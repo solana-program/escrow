@@ -59,7 +59,8 @@ export function SetImmutable() {
         >
             <div>
                 <Badge variant="warning">
-                    This action is one-way. Escrow configuration becomes permanently immutable.
+                    This action is one-way. Escrow configuration becomes permanently immutable. Any configured hook also
+                    becomes permanent, and hook reverts will block escrow operations.
                 </Badge>
             </div>
             <FormField
