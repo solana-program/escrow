@@ -4,8 +4,6 @@
 [![Built with Pinocchio](https://img.shields.io/badge/Built%20with-Pinocchio-purple)](https://github.com/solana-program/pinocchio)
 [![Solana](https://img.shields.io/badge/Solana-Devnet-green)](https://solana.com)
 
-> **SECURITY NOTICE**: This program has not been audited. Use at your own risk. Not recommended for production use with real funds without a thorough security review.
-
 ## Program ID
 
 ```
@@ -121,6 +119,12 @@ just fmt
 - **[Pinocchio](https://github.com/anza-xyz/pinocchio)** - Lightweight `no_std` Solana framework
 - **[Codama](https://github.com/codama-idl)** - IDL-driven client generation
 - **[LiteSVM](https://github.com/LiteSVM/litesvm)** - Fast local testing
+
+## Security Audit
+
+`escrow` has been audited by [Accretion](https://accretion.xyz). View the [audit report](audits/2026-accretion-solana-foundation-escrow-audit-A26SFR3.pdf).
+
+Audit status, audited-through commit, and the current unaudited delta are tracked in [audits/AUDIT_STATUS.md](audits/AUDIT_STATUS.md).
 
 ---
 
