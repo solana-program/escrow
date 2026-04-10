@@ -37,29 +37,6 @@ pub trait PdaSeeds {
         Ok(())
     }
 
-    /// Validate that account matches PDA derived with the provided bump.
-    ///
-    /// This does not enforce canonical bump selection. Use `validate_pda`
-    /// when canonical bump invariants must be enforced (e.g., account creation).
-    #[inline(always)]
-    fn validate_pda_with_bump(
-        &self,
-        account: &AccountView,
-        program_id: &Address,
-        bump: u8,
-    ) -> Result<(), ProgramError> {
-        let seeds = self.seeds();
-        let bump_arr = [bump];
-        let mut seeds_with_bump = seeds;
-        seeds_with_bump.push(&bump_arr[..]);
-        let derived =
-            Address::create_program_address(&seeds_with_bump, program_id).map_err(|_| ProgramError::InvalidSeeds)?;
-        if account.address() != &derived {
-            return Err(ProgramError::InvalidSeeds);
-        }
-        Ok(())
-    }
-
     /// Validate that account address matches derived PDA and return the canonical bump.
     ///
     /// Uses `find_program_address` — only call this when the bump is not already known.
@@ -83,7 +60,7 @@ pub trait PdaAccount: PdaSeeds {
     /// Validate that account matches derived PDA using stored bump
     #[inline(always)]
     fn validate_self(&self, account: &AccountView, program_id: &Address) -> Result<(), ProgramError> {
-        self.validate_pda_with_bump(account, program_id, self.bump())
+        self.validate_pda(account, program_id, self.bump())
     }
 }
 
