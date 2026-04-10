@@ -4,10 +4,10 @@ use crate::{
         DEFAULT_DEPOSIT_AMOUNT,
     },
     utils::{
-        assert_custom_error, assert_escrow_error, assert_instruction_error, find_receipt_pda, test_empty_data,
-        test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program, test_wrong_owner,
-        test_wrong_system_program, test_wrong_token_program, EscrowError, TestContext, TestInstruction,
-        TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
+        assert_custom_error, assert_escrow_error, assert_instruction_error, find_noncanonical_program_address,
+        find_receipt_pda, test_empty_data, test_missing_signer, test_not_writable, test_wrong_account,
+        test_wrong_current_program, test_wrong_owner, test_wrong_system_program, test_wrong_token_program, EscrowError,
+        TestContext, TestInstruction, TEST_HOOK_ALLOW_ID, TEST_HOOK_DENY_ERROR, TEST_HOOK_DENY_ID,
     },
 };
 use escrow_program_client::instructions::DepositBuilder;
@@ -81,6 +81,29 @@ fn test_deposit_invalid_bump() {
     let invalid_bump = correct_bump.wrapping_add(1);
 
     let error = valid_ix.with_data_byte_at(1, invalid_bump).send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidSeeds);
+}
+
+#[test]
+fn test_deposit_noncanonical_receipt_pda_rejected() {
+    let mut ctx = TestContext::new();
+    let setup = DepositSetup::new(&mut ctx);
+    let valid_ix = setup.build_instruction(&ctx);
+    let program_id = valid_ix.instruction.program_id;
+
+    let depositor = setup.depositor.pubkey();
+    let mint = setup.mint.pubkey();
+    let receipt_seed = setup.receipt_seed.pubkey();
+    let (noncanonical_receipt, noncanonical_bump) = find_noncanonical_program_address(
+        &[b"receipt", setup.escrow_pda.as_ref(), depositor.as_ref(), mint.as_ref(), receipt_seed.as_ref()],
+        &program_id,
+    )
+    .expect("expected at least one noncanonical bump");
+
+    let error = valid_ix
+        .with_account_at(5, noncanonical_receipt)
+        .with_data_byte_at(1, noncanonical_bump)
+        .send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidSeeds);
 }
 

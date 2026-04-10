@@ -1,8 +1,8 @@
 use crate::{
     fixtures::CreateEscrowFixture,
     utils::{
-        assert_escrow_account, assert_escrow_mutability, assert_instruction_error, test_empty_data,
-        test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program,
+        assert_escrow_account, assert_escrow_mutability, assert_instruction_error, find_noncanonical_program_address,
+        test_empty_data, test_missing_signer, test_not_writable, test_wrong_account, test_wrong_current_program,
         test_wrong_system_program, InstructionTestFixture, TestContext,
     },
 };
@@ -66,6 +66,25 @@ fn test_create_escrow_invalid_bump() {
     let invalid_bump = correct_bump.wrapping_add(1);
 
     let error = valid_ix.with_data_byte_at(1, invalid_bump).send_expect_error(&mut ctx);
+
+    assert_instruction_error(error, InstructionError::InvalidSeeds);
+}
+
+#[test]
+fn test_create_escrow_noncanonical_bump_rejected() {
+    let mut ctx = TestContext::new();
+    let valid_ix = CreateEscrowFixture::build_valid(&mut ctx);
+
+    let escrow_seed = valid_ix.instruction.accounts[2].pubkey;
+    let program_id = valid_ix.instruction.program_id;
+    let (noncanonical_escrow, noncanonical_bump) =
+        find_noncanonical_program_address(&[b"escrow", escrow_seed.as_ref()], &program_id)
+            .expect("expected at least one noncanonical bump");
+
+    let error = valid_ix
+        .with_account_at(3, noncanonical_escrow)
+        .with_data_byte_at(1, noncanonical_bump)
+        .send_expect_error(&mut ctx);
 
     assert_instruction_error(error, InstructionError::InvalidSeeds);
 }

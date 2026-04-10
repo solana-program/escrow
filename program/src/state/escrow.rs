@@ -79,6 +79,15 @@ impl PdaAccount for Escrow {
     fn bump(&self) -> u8 {
         self.bump
     }
+
+    #[inline(always)]
+    fn validate_self(&self, account: &AccountView, program_id: &Address) -> Result<(), ProgramError> {
+        let derived = Address::derive_address(&[Self::PREFIX, self.escrow_seed.as_ref()], Some(self.bump), program_id);
+        if account.address() != &derived {
+            return Err(ProgramError::InvalidSeeds);
+        }
+        Ok(())
+    }
 }
 
 impl Escrow {

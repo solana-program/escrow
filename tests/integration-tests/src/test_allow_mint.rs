@@ -2,8 +2,9 @@ use crate::{
     fixtures::{AllowMintFixture, AllowMintSetup},
     utils::{
         assert_account_exists, assert_allowed_mint_account, assert_escrow_error, assert_instruction_error,
-        find_allowed_mint_pda, test_missing_signer, test_not_writable, test_wrong_current_program,
-        test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
+        find_allowed_mint_pda, find_noncanonical_program_address, test_missing_signer, test_not_writable,
+        test_wrong_current_program, test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext,
+        RANDOM_PUBKEY,
     },
 };
 use escrow_program_client::instructions::{AllowMintBuilder, SetImmutableBuilder};
@@ -61,6 +62,26 @@ fn test_allow_mint_invalid_bump() {
     let invalid_bump = correct_bump.wrapping_add(1);
 
     let error = valid_ix.with_data_byte_at(1, invalid_bump).send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidSeeds);
+}
+
+#[test]
+fn test_allow_mint_noncanonical_pda_rejected() {
+    let mut ctx = TestContext::new();
+    let setup = AllowMintSetup::new(&mut ctx);
+    let valid_ix = setup.build_instruction(&ctx);
+    let program_id = valid_ix.instruction.program_id;
+
+    let (noncanonical_allowed_mint, noncanonical_bump) = find_noncanonical_program_address(
+        &[b"allowed_mint", setup.escrow_pda.as_ref(), setup.mint_pubkey.as_ref()],
+        &program_id,
+    )
+    .expect("expected at least one noncanonical bump");
+
+    let error = valid_ix
+        .with_account_at(5, noncanonical_allowed_mint)
+        .with_data_byte_at(1, noncanonical_bump)
+        .send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidSeeds);
 }
 

@@ -21,7 +21,10 @@ pub trait PdaSeeds {
         Address::find_program_address(&seeds, program_id)
     }
 
-    /// Validate that account matches derived PDA
+    /// Validate that account matches the canonical PDA for these seeds.
+    ///
+    /// This enforces the canonical bump (highest valid bump) returned by
+    /// `find_program_address`.
     #[inline(always)]
     fn validate_pda(&self, account: &AccountView, program_id: &Address, expected_bump: u8) -> Result<(), ProgramError> {
         let (derived, bump) = self.derive_address(program_id);
@@ -34,7 +37,10 @@ pub trait PdaSeeds {
         Ok(())
     }
 
-    /// Validate that account address matches derived PDA, returns canonical bump
+    /// Validate that account address matches derived PDA and return the canonical bump.
+    ///
+    /// Uses `find_program_address` — only call this when the bump is not already known.
+    /// When bump is available, prefer `validate_pda` or `validate_self`.
     #[inline(always)]
     fn validate_pda_address(&self, account: &AccountView, program_id: &Address) -> Result<u8, ProgramError> {
         let (derived, bump) = self.derive_address(program_id);

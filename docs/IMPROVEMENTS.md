@@ -13,3 +13,5 @@ The following enhancements could be considered for future iterations of the prog
 5. **Receipt Seed Space Optimization** - The current `receipt_seed` uses a 32-byte `Address` type. Two alternatives could save space:
     - **Use `u8` counter**: Change to a simple counter (0-255), saving 31 bytes per receipt. Limits to 256 receipts per depositor/escrow/mint combination, which is acceptable for most use cases.
     - **Single receipt with `deposit_additional` instruction**: Allow users to add to an existing receipt rather than creating new ones. This would require handling complexities around `deposited_at` timestamps (e.g., weighted average, use latest, or track per-deposit).
+
+6. **Two-Step Admin Transfer** - The current `UpdateAdmin` instruction requires both the current and new admin to sign the same transaction. This is problematic when transferring to/from multisig wallets (e.g., Squads), since both parties must be present in one transaction. A 2-step pattern (`ProposeAdmin` → `AcceptAdmin`, with optional `CancelAdminTransfer` and a timeout) would allow async coordination between parties and is the standard pattern for admin handoffs in production programs.

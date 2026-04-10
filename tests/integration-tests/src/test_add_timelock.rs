@@ -2,9 +2,9 @@ use crate::{
     fixtures::{AddTimelockFixture, CreateEscrowFixture, SetImmutableFixture},
     utils::{
         assert_escrow_error, assert_extensions_header, assert_instruction_error, assert_timelock_extension,
-        find_escrow_pda, find_extensions_pda, test_empty_data, test_missing_signer, test_not_writable,
-        test_truncated_data, test_wrong_account, test_wrong_current_program, test_wrong_system_program, EscrowError,
-        InstructionTestFixture, TestContext, RANDOM_PUBKEY,
+        find_escrow_pda, find_extensions_pda, find_noncanonical_program_address, test_empty_data, test_missing_signer,
+        test_not_writable, test_truncated_data, test_wrong_account, test_wrong_current_program,
+        test_wrong_system_program, EscrowError, InstructionTestFixture, TestContext, RANDOM_PUBKEY,
     },
 };
 use solana_sdk::{instruction::InstructionError, signature::Signer};
@@ -50,6 +50,24 @@ fn test_add_timelock_invalid_extensions_bump() {
     let correct_bump = test_ix.instruction.data[1];
     let invalid_bump = correct_bump.wrapping_add(1);
     let error = test_ix.with_data_byte_at(1, invalid_bump).send_expect_error(&mut ctx);
+    assert_instruction_error(error, InstructionError::InvalidSeeds);
+}
+
+#[test]
+fn test_add_timelock_noncanonical_extensions_pda_rejected() {
+    let mut ctx = TestContext::new();
+    let test_ix = AddTimelockFixture::build_valid(&mut ctx);
+    let escrow = test_ix.instruction.accounts[2].pubkey;
+    let program_id = test_ix.instruction.program_id;
+
+    let (noncanonical_extensions, noncanonical_bump) =
+        find_noncanonical_program_address(&[b"extensions", escrow.as_ref()], &program_id)
+            .expect("expected at least one noncanonical bump");
+
+    let error = test_ix
+        .with_account_at(3, noncanonical_extensions)
+        .with_data_byte_at(1, noncanonical_bump)
+        .send_expect_error(&mut ctx);
     assert_instruction_error(error, InstructionError::InvalidSeeds);
 }
 

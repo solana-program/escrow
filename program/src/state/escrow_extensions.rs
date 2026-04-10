@@ -374,11 +374,8 @@ pub fn update_or_append_extension<const N: usize>(
 ///
 /// Returns `Ok(())` if:
 /// - Extensions account is the correct PDA for this escrow
-/// - If data exists, the stored bump matches the canonical bump
+/// - If data exists, the stored bump matches the derived address
 pub fn validate_extensions_pda(escrow: &AccountView, extensions: &AccountView, program_id: &Address) -> ProgramResult {
-    let extensions_pda = ExtensionsPda::new(escrow.address());
-    let expected_bump = extensions_pda.validate_pda_address(extensions, program_id)?;
-
     if extensions.data_len() > 0 {
         if !extensions.owned_by(program_id) {
             return Err(ProgramError::InvalidAccountOwner);
@@ -386,9 +383,16 @@ pub fn validate_extensions_pda(escrow: &AccountView, extensions: &AccountView, p
 
         let data = extensions.try_borrow()?;
         let header = EscrowExtensionsHeader::from_bytes(&data)?;
-        if header.bump != expected_bump {
+
+        let derived =
+            Address::derive_address(&[ExtensionsPda::PREFIX, escrow.address().as_ref()], Some(header.bump), program_id);
+        if extensions.address() != &derived {
             return Err(ProgramError::InvalidSeeds);
         }
+    } else {
+        // Extensions account not yet created — derive canonical bump via find_program_address
+        let extensions_pda = ExtensionsPda::new(escrow.address());
+        extensions_pda.validate_pda_address(extensions, program_id)?;
     }
 
     Ok(())
